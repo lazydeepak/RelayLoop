@@ -594,7 +594,35 @@ class App:
             self.relay._event("verify", str(exc), "error")
             return {"ok": False, "error": str(exc)}
 
+    def pause_all(self):
+        results = []
+        for pair_id, relay in list(self.relays.items()):
+            if relay.status().get("status") == "running":
+                try:
+                    results.append({"pair_id": pair_id, **relay.stop()})
+                except Exception as exc:
+                    results.append({"pair_id": pair_id, "ok": False, "error": str(exc)})
+        return {"ok": True, "action": "pause", "results": results}
+
+    def stop_all(self):
+        results = []
+        for pair_id, relay in list(self.relays.items()):
+            if relay.status().get("status") != "stopped" or relay.status().get("pending") or relay.status().get("unresolved"):
+                try:
+                    results.append({"pair_id": pair_id, **relay.stop()})
+                except Exception as exc:
+                    results.append({"pair_id": pair_id, "ok": False, "error": str(exc)})
+        return {"ok": True, "action": "stop", "results": results}
+
     def mutate(self, action, data=None):
+        if action in ("pause_all", "stop_all"):
+            with self.lock:
+                if self.operation_busy: raise RuntimeError("Another dashboard operation is already in progress")
+                self.operation_busy = True
+            try:
+                return self.pause_all() if action == "pause_all" else self.stop_all()
+            finally:
+                with self.lock: self.operation_busy = False
         data = data or {}
         pair_id = data.get("pair_id") or self.selected_pair_id
         target_relay = self._relay_for_pair(pair_id)
@@ -691,7 +719,9 @@ class Handler(BaseHTTPRequestHandler):
             elif path == "/api/pairs/select": result = self.app().select_pair(data.get("id"))
             elif path == "/api/pairs/release": result = self.app().release_pair(data.get("pair_id") or data.get("id"))
             elif path == "/api/project/record": result = self.app().record_project(data)
-            elif path in ("/api/start", "/api/stop", "/api/verify", "/api/refresh"): result = self.app().mutate(path.rsplit("/", 1)[1], data)
+            elif path in ("/api/start", "/api/stop", "/api/verify", "/api/refresh", "/api/pause-all", "/api/stop-all"):
+                action_map = {"/api/pause-all": "pause_all", "/api/stop-all": "stop_all"}
+                result = self.app().mutate(action_map.get(path) or path.rsplit("/", 1)[1], data)
             else: return self.json(404, {"error": "not found"})
             return self.json(200, result)
         except Exception as exc: return self.json(409, {"error": str(exc), **({"field_errors": exc.errors} if isinstance(exc, PairValidationError) else {})})
