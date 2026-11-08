@@ -59,7 +59,10 @@
 .main-area{min-width:0;width:100%;max-width:100%;padding:20px;overflow:auto}
 .page{display:none;width:100%;max-width:100%}
 .page.active{display:block}
-@media(max-width:900px){.app-shell{grid-template-columns:1fr}.sidebar{display:none}}
+.hamburger-btn{display:none;align-items:center;justify-content:center;width:40px;height:40px;border:1px solid var(--line);border-radius:8px;background:var(--button-bg);color:var(--text);cursor:pointer;font-size:18px;line-height:1}
+.sidebar-backdrop{display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:999}
+.sidebar-backdrop.show{display:block}
+@media(max-width:900px){.app-shell{grid-template-columns:1fr}.hamburger-btn{display:inline-flex}.sidebar{position:fixed;top:0;bottom:0;left:0;width:260px;max-width:85vw;z-index:1000;transform:translateX(-105%);transition:transform .25s ease;overflow-y:auto;box-shadow:0 0 40px rgba(0,0,0,.4)}.sidebar.open{transform:translateX(0)}.sidebar.is-collapsed{width:260px}.sidebar.is-collapsed .nav-label,.sidebar.is-collapsed .section-label,.sidebar.is-collapsed .brand-copy{display:initial}.sidebar.is-collapsed button{justify-content:flex-start;padding:9px 10px}}
 
 .brand-mark{width:30px;height:30px;border-radius:8px;background:linear-gradient(135deg,var(--cyan),var(--green));display:grid;place-items:center;font-weight:700;color:var(--active-text)}
 .mt-12{margin-top:12px}
