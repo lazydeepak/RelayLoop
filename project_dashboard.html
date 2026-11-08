@@ -17,13 +17,13 @@ h1{margin:6px 0;font-size:30px} .eyebrow{color:var(--cyan);font-size:11px;letter
 .value{font-size:30px;font-weight:700;margin:8px 0}
 .label{color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.1em}
 .ok{color:var(--green)} .warn{color:var(--amber)} .bad{color:var(--red)} .info{color:var(--cyan)}
-.chart-wrap{display:grid;grid-template-columns:minmax(160px,220px) minmax(0,1fr);gap:18px;align-items:center}
-.pie{width:160px;height:160px;max-width:100%;border-radius:50%;margin:auto;position:relative;box-shadow:inset 0 0 0 1px #ffffff12}
-.pie::after{content:"";position:absolute;inset:30px;border-radius:50%;background:var(--bg)}
+.chart-wrap{display:grid;grid-template-columns:minmax(120px,1fr) minmax(0,1fr);gap:12px;align-items:center}
+.pie{width:120px;height:120px;max-width:100%;border-radius:50%;margin:auto;position:relative;box-shadow:inset 0 0 0 1px #ffffff12}
+.pie::after{content:"";position:absolute;inset:24px;border-radius:50%;background:var(--bg)}
 .legend{display:grid;gap:8px}
 .legend-row{display:flex;align-items:center;gap:8px;font-size:12px;flex-wrap:wrap;min-width:0}
 .dot{width:10px;height:10px;border-radius:50%}
-.bar-row{display:grid;grid-template-columns:150px 1fr 44px;gap:10px;align-items:center;margin:8px 0;font-size:12px}
+.bar-row{display:grid;grid-template-columns:minmax(80px,1fr) 1fr 40px;gap:8px;align-items:center;margin:8px 0;font-size:12px}
 .bar{height:12px;border-radius:999px;background:#1b2f40;overflow:hidden}
 .bar > span{display:block;height:100%;border-radius:999px}
 .table-wrap{overflow:auto;max-height:360px;border:1px solid var(--line);border-radius:10px}
