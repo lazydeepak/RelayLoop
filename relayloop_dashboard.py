@@ -693,9 +693,12 @@ class Handler(BaseHTTPRequestHandler):
     def app(self): return self.server.app
     def json(self, status, value):
         body = json.dumps(value).encode()
-        self.send_response(status); self.send_header("Content-Type", "application/json")
-        self.send_header("Content-Length", str(len(body))); self.send_header("Cache-Control", "no-store")
-        self.end_headers(); self.wfile.write(body)
+        try:
+            self.send_response(status); self.send_header("Content-Type", "application/json")
+            self.send_header("Content-Length", str(len(body))); self.send_header("Cache-Control", "no-store")
+            self.end_headers(); self.wfile.write(body)
+        except (BrokenPipeError, ConnectionResetError):
+            pass
     def do_GET(self):
         path = urlparse(self.path).path
         if path == "/api/status": return self.json(200, self.app().status())
@@ -778,8 +781,16 @@ def start_project_watcher(app, root, stop_event):
         known = current
 
 
+class RelayHTTPServer(ThreadingHTTPServer):
+    def handle_error(self, request, client_address):
+        try:
+            raise
+        except (BrokenPipeError, ConnectionResetError):
+            pass
+
+
 def make_server(app, port=DEFAULT_PORT):
-    server = ThreadingHTTPServer(("127.0.0.1", port), Handler); server.app = app; return server
+    server = RelayHTTPServer(("127.0.0.1", port), Handler); server.app = app; return server
 
 
 def main():
