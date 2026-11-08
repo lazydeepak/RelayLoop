@@ -1,0 +1,7 @@
+{
+  "name": "relayloop-dashboard",
+  "private": true,
+  "scripts": {
+    "dev": "python3 dashboard.py"
+  }
+}

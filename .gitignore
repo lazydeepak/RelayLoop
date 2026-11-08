@@ -1,0 +1,10 @@
+# Dashboard runtime, logs, extracted controller, and local test artifacts
+.runtime/
+.dashboard-runtime/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+*.log
+
+node_modules/
+controller-runtime/

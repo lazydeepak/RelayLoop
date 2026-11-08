@@ -1,0 +1,406 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>RelayLoop</title>
+<style>
+:root{color-scheme:dark;--bg:#09111b;--panel:#111d2a;--line:#293d50;--text:#e5eef6;--muted:#9cafbf;--cyan:#67d8e5;--red:#ff8174;--green:#83d89e;--amber:#f0bb58}*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font:14px -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}main{max-width:1120px;margin:auto;padding:28px 24px}.top{display:flex;justify-content:space-between;align-items:end;border-bottom:1px solid var(--line);padding-bottom:18px}.eyebrow,.label{color:var(--muted);font-size:11px;letter-spacing:.12em;text-transform:uppercase}.eyebrow{color:var(--cyan)}h1{font-size:28px;margin:8px 0}.clock,.sub{color:var(--muted);font-size:12px}.actions,.form-actions{display:flex;gap:10px}button{background:#172737;border:1px solid var(--line);color:var(--text);padding:11px 16px;font-weight:650;cursor:pointer}button:hover:not(:disabled){border-color:var(--cyan);color:var(--cyan)}button:disabled{opacity:.45;cursor:not-allowed}#start{background:#133b3b;border-color:#236263}#stop{background:#392322;border-color:#67403d}.layout{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:18px}.card{background:var(--panel);border:1px solid var(--line);padding:18px;min-width:0}.full{grid-column:span 3}.wide{grid-column:span 2}.value{font-size:21px;margin-top:12px;overflow-wrap:anywhere}.state{color:var(--amber)}.ok{color:var(--green)}.error{color:var(--red)}.form{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:12px 0}.form label{color:var(--muted);font-size:12px}.form input{display:block;width:100%;margin-top:6px;padding:11px;background:#09121c;border:1px solid var(--line);color:var(--text);font:12px ui-monospace,monospace}.form input:focus{outline:1px solid var(--cyan)}.warning{color:var(--amber);margin-top:10px}.timeline-scroll{max-height:360px;overflow-y:auto;overscroll-behavior:contain;scrollbar-gutter:stable;margin-top:12px}.timeline ol{list-style:none;margin:0;padding:0}footer{color:var(--muted);font-size:11px;padding:18px 0}@media(max-width:740px){main{padding:18px 14px}.top{align-items:start;gap:12px;flex-direction:column}.layout{grid-template-columns:1fr}.full,.wide{grid-column:span 1}.form{grid-template-columns:1fr}.timeline li{grid-template-columns:1fr;gap:4px}}
+</style>
+<style>
+.pair-preview{border:1px solid #35566a;background:linear-gradient(115deg,#122635,#10202c 68%,#14232c);padding:13px 14px;margin:12px 0 16px;position:relative}
+.pair-preview:before{content:"";position:absolute;left:-1px;top:-1px;bottom:-1px;width:3px;background:var(--cyan)}
+.pair-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:10px}
+.pair-title{font-size:13px;font-weight:700;letter-spacing:.02em}
+.preview-tag{font-size:10px;color:#9ceaf0;border:1px solid #386b73;padding:4px 7px;letter-spacing:.08em;text-transform:uppercase;white-space:nowrap}
+.pair-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
+.pair-grid label{color:var(--muted);font-size:11px}
+.pair-grid input,.pair-grid select{display:block;width:100%;height:38px;min-height:38px;margin-top:5px;padding:8px 10px;background:#09141e;border:1px solid #304656;color:var(--text);font:12px ui-monospace,monospace}
+.pair-grid input[readonly]{color:#a9bac6;background:#0d1923}
+.pair-grid .pair-id-value{display:flex;align-items:center;width:100%;height:38px;min-height:38px;margin-top:5px;padding:0 10px;background:#0d1923;border:1px solid #304656;color:#a9bac6;font:12px ui-monospace,monospace;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pair-grid .pair-id-value{justify-content:space-between;gap:8px;background:#0a131b;border-color:#263744;color:#8799a6;cursor:default}
+.pair-id-placeholder{overflow-x:auto;overflow-y:hidden;text-overflow:clip;white-space:nowrap;min-width:0;flex:1;scrollbar-width:thin}
+.pair-grid input[aria-invalid="true"]{border-color:var(--red);box-shadow:0 0 0 1px #ff817455}
+.readonly-tag{flex:none;padding:3px 5px;border:1px solid #40505c;border-radius:2px;color:#aebbc4;font:9px -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;letter-spacing:.07em}
+.pair-grid input:not([readonly]){border-color:#4b8292;background:#091923;color:#f0f8fb}
+.pair-actions{display:flex;align-items:center;gap:8px;margin-top:10px}
+.pair-actions button{padding:7px 11px;font-size:11px}
+.pair-actions .future{border-color:#527688;color:#e1edf2;background:#263d4b;opacity:1}
+.pair-actions .future:disabled{opacity:1;color:#d4e3e9;border-color:#527688;background:#263d4b}
+.pair-note{font-size:11px;color:#a9c4cf;margin-left:auto}
+.runtime-heading{margin:14px 0 4px;padding-top:12px;border-top:1px solid var(--line);color:var(--amber);font-size:11px;letter-spacing:.1em;text-transform:uppercase}.pair-errors{display:block;min-height:14px;margin-top:4px;color:var(--red);font-size:11px}.pair-grid label{min-width:0}
+@media(max-width:640px){main{padding:18px 14px}.top{align-items:start;gap:14px;flex-direction:column}.actions{width:100%}.actions button{flex:1}.layout{grid-template-columns:1fr 1fr}.full{grid-column:span 2}.wide{grid-column:span 2}.pair-grid{grid-template-columns:1fr}.pair-head{align-items:flex-start}.pair-note{margin-left:0}.pair-actions{flex-wrap:wrap}}
+</style><style>
+.live{grid-column:span 3;border-top:2px solid var(--cyan);background:linear-gradient(135deg,#112331,#101b27 58%,#13202b);padding:20px}.live-head{display:flex;justify-content:space-between;align-items:baseline;gap:12px}.live h2{font-size:19px;margin:0}.track{align-items:center;padding:18px 8px;margin:14px 0;background:#0a141e;border:1px solid var(--line)}.node{padding:9px 14px;border:1px solid #3b5263;background:#132331;font-weight:700}.node.expected{border-color:var(--amber);color:var(--amber)}.arrow{color:#526574;font-size:18px}.arrow.active{color:var(--cyan);text-shadow:0 0 12px #67d8e588}.track-note{font-size:11px;color:var(--muted);text-align:center}.live-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}.live-state{border:1px solid var(--line);background:#0d1924;padding:13px;min-width:0}.live-state .value{font-size:18px;margin:8px 0}.estimate{color:var(--muted);font-size:11px;margin-top:8px}.legacy{grid-column:span 3}.legacy summary{cursor:pointer;color:var(--muted);padding:12px 0}.legacy .layout{margin-top:0}.live-state{overflow-wrap:anywhere}
+
+</style><style>
+.layout{grid-template-columns:repeat(3,minmax(0,1fr))}.card,.live-state,.pair-preview,.pair-grid>*{min-width:0}.live,.legacy,.full,.wide{grid-column:1/-1}
+.top>div,.actions,.form,.pair-grid,.timeline-scroll{min-width:0}.actions button{min-width:0;white-space:normal}.form{grid-template-columns:repeat(2,minmax(0,1fr))}.pair-grid{grid-template-columns:repeat(3,minmax(0,1fr))}
+.track{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px}.track-segment{display:flex;flex-direction:column;align-items:center;gap:5px}.track-badge{font-size:10px;color:var(--muted);text-align:center}.track-badge.active{color:var(--cyan)}.track-badge.confirmed{color:var(--green);font-weight:700}.track-note{padding:6px 10px;margin:0 0 12px;border-left:2px solid var(--cyan);background:#0d1924;text-align:left}
+.timeline li{display:grid;grid-template-columns:minmax(110px,145px) minmax(120px,1fr) minmax(110px,145px) minmax(90px,120px) 95px;align-items:start;gap:12px;padding:10px 0;border-bottom:1px solid #1c2a39;font-size:12px;overflow-wrap:anywhere}.timeline li b{color:var(--cyan)}.timeline li .timestamp{color:var(--muted);font-family:ui-monospace,monospace}.timeline li .outcome{font-weight:700}.timeline li.confirmed .outcome{color:var(--green)}.timeline li.waiting .outcome,.timeline li.observed .outcome{color:var(--amber)}.timeline li.unresolved .outcome{color:var(--red)}.timeline-cell-label{position:absolute!important;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}.timeline-head{display:grid;grid-template-columns:minmax(110px,145px) minmax(120px,1fr) minmax(110px,145px) minmax(90px,120px) 95px;gap:8px;color:var(--muted);font-size:10px;text-transform:uppercase}
+.expected-tag{display:block;margin-top:4px;color:var(--amber);font-size:9px;letter-spacing:.08em;text-transform:uppercase}.expected-tag[hidden]{display:none}
+@media(max-width:740px){.layout{grid-template-columns:repeat(2,minmax(0,1fr))}.live,.legacy,.full,.wide{grid-column:1/-1}.live-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.pair-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.timeline li{grid-template-columns:repeat(2,minmax(0,1fr))}.timeline-head{display:none}.timeline-cell-label{position:static!important;display:block;width:auto;height:auto;padding:0;margin:0;overflow:visible;clip:auto;white-space:normal;color:var(--muted);font-size:10px;text-transform:uppercase;border:0}}
+@media(max-width:480px){main{padding:16px 12px}.layout{grid-template-columns:minmax(0,1fr)}.top{align-items:stretch;flex-direction:column;gap:14px}.actions{width:100%;gap:8px}.actions button{flex:1;padding:10px 8px}.live-grid,.pair-grid,.form{grid-template-columns:minmax(0,1fr)}.track{grid-template-columns:minmax(0,1fr);justify-items:stretch;gap:6px;padding:10px}.node{text-align:center;padding:8px 6px;font-size:12px}.track-segment{flex-direction:row;justify-content:center;align-items:center;gap:8px}.track-segment .arrow{transform:rotate(90deg)}.track-badge{max-width:100%;overflow-wrap:anywhere;white-space:pre-line}.timeline li{grid-template-columns:minmax(0,1fr)}.timeline-head{display:none}.form-actions{flex-wrap:wrap}.pair-note{margin-left:0}}
+.track-badge.unresolved{color:var(--red);font-weight:700}.track-note.unresolved{border-left-color:var(--red);color:#ffd5d5}.node.unresolved-target{border-color:var(--red);color:var(--red)}.track-badge.queued{color:var(--amber);font-weight:700}.track-note.queued{border-left-color:var(--amber)}.node.queued-target{border-color:var(--amber);color:var(--amber)}
+</style></head><body><main>
+<header class="top"><div><div class="eyebrow">RelayLoop · independent conversation relay</div><h1>Planner ↔ Worker</h1><div class="clock" id="clock">Local time</div></div><div class="actions"><button id="refresh_run" type="button" title="Refresh Planner and clear held session state">Refresh</button><button id="start">Start Automation</button><button id="stop" disabled>Graceful Stop</button></div></header>
+<section class="layout">
+<article class="card full"><div class="label">Connections · one active pair</div><section class="pair-preview" aria-label="Pair profiles"><div class="pair-head"><div class="pair-title">Pair profiles</div></div><div class="sub">Saved locally · selected pair is used by Verify and Start.</div><div class="pair-grid"><label>Select pair<select id="profile_select" aria-label="Select pair"></select></label><label>Pair name<input id="profile_name" autocomplete="off"><span class="pair-errors" id="name_error" aria-live="polite"></span></label><label>Pair ID<span class="pair-id-value" role="textbox" aria-readonly="true" aria-label="Pair ID"><span class="pair-id-placeholder" id="profile_id">Waiting for status…</span><span class="readonly-tag" aria-hidden="true">READ-ONLY</span></span></label><label>Planner URL<input id="profile_planner" autocomplete="off"><span class="pair-errors" id="planner_error" aria-live="polite"></span></label><label>Worker session ID<input id="profile_worker" autocomplete="off"><span class="pair-errors" id="worker_error" aria-live="polite"></span></label></div><div class="pair-actions"><button class="future" id="add_pair" type="button">Add Pair</button><button class="future" id="save_pair" type="button">Save Pair</button><button id="cancel_pair" type="button" hidden>Cancel draft</button><button id="discard_pair" type="button" hidden>Discard edits</button><span class="pair-note" id="pair_note">Saved locally · selected pair is used by Verify and Start.</span></div></section><div class="runtime-heading">Current runtime connection · used by Save Connections, Verify, and automation</div><div class="form"><label>Planner URL<input id="planner_url" autocomplete="off"></label><label>Worker session ID<input id="worker_session" autocomplete="off"></label></div><div class="form-actions"><button id="save">Save Connections</button><button id="verify">Verify Connections</button></div><div class="sub" id="message">Verify checks both destinations without starting the relay. Start continues an active turn from either side; when both are idle, Planner goes first.</div></article>
+<section class="card live" aria-labelledby="live-title"><div class="live-head"><h2 id="live-title">Live Run</h2><span class="label">Observed status</span></div><div class="track" role="group" aria-label="Planner to Worker to Planner handoff track"><span class="node" id="planner_node">Planner<span class="expected-tag" id="planner_expected" hidden>Expected</span></span><div class="track-segment"><span class="arrow" id="arrow_out" aria-hidden="true">→</span><span class="track-badge" id="out_badge">Idle</span></div><span class="node" id="worker_node">Worker<span class="expected-tag" id="worker_expected" hidden>Expected</span></span><div class="track-segment"><span class="arrow" id="arrow_back" aria-hidden="true">→</span><span class="track-badge" id="back_badge">Idle</span></div><span class="node" id="planner_return">Planner</span></div><div class="track-note" id="handoff_note" role="status">Transport idle; no confirmed handoff observed.</div><div class="live-grid"><article class="live-state"><div class="label">Planner</div><div class="value" id="planner_state">Unknown</div><div class="sub" id="planner_detail">Planner state is not exposed.</div><div class="estimate" id="planner_estimate">UI-observed estimate: —</div></article><article class="live-state"><div class="label">Worker</div><div class="value" id="worker_state">Unknown</div><div class="sub" id="worker_detail">Worker readiness is not exposed.</div><div class="estimate" id="worker_estimate">UI-observed estimate: —</div></article><article class="live-state"><div class="label">Extraction</div><div class="value" id="extract_state">Idle</div><div class="estimate" id="extract_estimate">UI-observed estimate: —</div></article><article class="live-state"><div class="label">Transport</div><div class="value" id="transport_state">Idle</div><div class="estimate" id="transport_estimate">UI-observed estimate: —</div></article></div><div class="sub" id="planner_countdown"></div></section>
+<details class="legacy"><summary>Legacy status cards</summary><div class="layout"><article class="card"><div class="label">Automation</div><div class="value state" id="status">Stopped</div><div class="sub" id="health">Automation does not start automatically.</div><div class="sub" id="runtime">Elapsed: —</div></article>
+ <article class="card"><div class="label">Relay phase</div><div class="value" id="turn">Planner</div><div class="sub" id="turnsub">Waiting for a fresh completed assistant message.</div></article>
+<article class="card"><div class="label">Extraction</div><div class="value" id="extraction">Idle</div><div class="sub" id="lastplanner">No message consumed yet.</div></article>
+<article class="card"><div class="label">Delivery</div><div class="value" id="delivery">No pending delivery</div><div class="sub" id="lastworker">No confirmed turn yet.</div></article></div></details>
+<article class="card wide"><div class="label">Errors</div><div class="value" id="errors">None reported</div></article>
+<article class="card timeline full"><div class="label">Recent activity</div><div class="timeline-scroll"><div class="timeline-head" aria-hidden="true"><span>Timestamp</span><span>Event</span><span>Direction</span><span>Duration</span><span>Outcome</span></div><ol id="timeline"><li><span>—</span><b>Ready</b><span>Verify connections, then explicitly start automation.</span></li></ol></div></article>
+</section><footer>Loopback-only · configuration only is saved · session state is disposable · no historical replay</footer></main>
+<script>
+let csrf = '';
+let dirty = false;
+let refreshing = false;
+let observedRunStartedAt = null;
+let observedRunKey = null;
+let previewProfiles = [];
+let selectedProfileId = null;
+let pairDraft = false;
+let previewSeeded = false;
+let currentLockReason = '';
+let pairBusy = false;
+let pairEditing = false;
+let focusAfterPost = null;
+const observedActions = { extraction:{key:null,since:null}, transport:{key:null,since:null}, planner:{key:null,since:null}, worker:{key:null,since:null} };
+const observedTransitions = [];
+let lastObservedPhase = null;
+const $ = (id) => document.getElementById(id);
+
+function localTimestamp(value) {
+  const match = /^(\d{4})-(\d{2})-(\d{2}) (\d{2}):(\d{2}):(\d{2})/.exec(value || '');
+  if (!match) return null;
+  const [, year, month, day, hour, minute, second] = match.map(Number);
+  return new Date(year, month - 1, day, hour, minute, second).getTime();
+}
+
+function formatElapsed(seconds) {
+  const hours = Math.floor(seconds / 3600);
+  const minutes = Math.floor((seconds % 3600) / 60);
+  const remainder = seconds % 60;
+  return [hours, minutes, remainder].map((part) => String(part).padStart(2, '0')).join(':');
+}
+function observedDuration(name, key, target) {
+  const state = observedActions[name];
+  if (!key) { state.key = null; state.since = null; $(target).textContent = 'UI-observed estimate: —'; return; }
+  if (state.key !== key) { state.key = key; state.since = Date.now(); }
+  $(target).textContent = `UI-observed estimate · waiting since first seen ${formatElapsed(Math.floor((Date.now() - state.since) / 1000))} (resets on reload)`;
+}
+
+function inferPhase(data) {
+  const pending = data.pending;
+  return data.phase || (pending?.direction === 'planner_to_worker' ? 'delivering_to_worker' :
+    pending?.direction === 'worker_to_planner' ? 'delivering_to_planner' :
+      data.status === 'running' && data.expected_turn === 'worker' ? 'waiting_for_worker' :
+        data.status === 'running' ? 'waiting_for_planner' : 'stopped');
+}
+function phaseLabel(phase) {
+  const labels = {
+    delivering_to_worker: 'Planner → Worker · delivering',
+    waiting_for_worker: 'Worker · waiting for completion',
+    delivering_to_planner: 'Worker → Planner · delivering',
+    waiting_for_planner: 'Planner · waiting for response',
+    waiting_for_planner_completion: 'Planner · response generating',
+    waiting_for_planner_ready: 'Worker report queued · waiting for Planner readiness',
+    planner_ready_timeout: 'Planner readiness timed out · report not sent',
+    planner_readiness_error: 'Planner readiness check failed · report not sent',
+    processing_planner: 'Planner · processing message',
+    planner_timeout: 'Planner · response window expired',
+    worker_prompt_unavailable: 'Worker prompt not available · relay paused',
+    unresolved: 'Delivery unresolved · held for this run',
+    stopped: 'Stopped',
+  };
+  return labels[phase] || phase;
+}
+
+function render(data) {
+  const active = data.status === 'running';
+  const turn = data.turn || {};
+  const pending = data.pending;
+  currentLockReason = active ? 'Stop automation before changing profiles.' : (data.pending || data.unresolved ? 'Resolve pending delivery before changing profiles.' : '');
+  if (data.settings) {
+    previewProfiles = (data.pairs || []).map((p) => ({id:p.id,name:p.name,planner:p.planner_url,worker:p.worker_session}));
+    selectedProfileId = data.selected_pair_id || null;
+    previewSeeded = true;
+    renderProfiles();
+  }
+  const phase = inferPhase(data);
+  const held = data.unresolved && typeof data.unresolved === 'object' ? data.unresolved : null;
+  const queuedForPlanner = !!pending && pending.direction === 'worker_to_planner' && !pending.submission_attempted && ['waiting_for_planner_ready','waiting_for_planner_completion','planner_ready_timeout','planner_readiness_error'].includes(phase);
+  const extractionSide = phase === 'extracting' && pending ? (pending.direction === 'planner_to_worker' ? 'Planner' : pending.direction === 'worker_to_planner' ? 'Worker' : null) : null;
+  const transportActive = !!pending && phase !== 'extracting' && (pending.direction === 'relayloop_to_planner' || /deliver|submit|receipt|verif/i.test(`${phase} ${pending.stage || ''}`));
+  const directionLabel = (direction) => direction === 'planner_to_worker' ? 'Planner → Worker' : direction === 'worker_to_planner' ? 'Worker → Planner' : direction === 'relayloop_to_planner' ? 'RelayLoop → Planner' : 'Unknown';
+  const transportLabel = held ? `Unresolved · ${directionLabel(held.direction)}` : queuedForPlanner ? (phase === 'planner_ready_timeout' ? 'Queued · readiness timed out' : phase === 'planner_readiness_error' ? 'Queued · readiness check failed' : 'Queued · waiting for Planner') : transportActive ? directionLabel(pending.direction) : 'Idle';
+  const plannerWorking = phase === 'waiting_for_planner_completion';
+  const plannerReady = phase === 'waiting_for_worker';
+  const plannerWaiting = ['waiting_for_planner','waiting_for_planner_completion','waiting_for_planner_ready'].includes(phase);
+  $('planner_state').textContent = plannerWorking ? 'Working' : plannerReady ? 'Ready / Idle' : 'Unknown';
+  $('planner_detail').textContent = queuedForPlanner && plannerWorking ? 'Planner is generating; the Worker report is queued and has not been sent.' : queuedForPlanner && phase === 'planner_ready_timeout' ? 'Planner readiness wait timed out; the Worker report remains queued and was not sent.' : queuedForPlanner && phase === 'planner_readiness_error' ? 'Planner readiness could not be confirmed; the Worker report remains queued and was not sent.' : queuedForPlanner ? 'Worker report is queued; waiting for the Planner composer to be ready. No send attempted.' : plannerWorking ? 'Planner response is explicitly generating.' : plannerReady ? 'Planner turn is complete; Worker is expected.' : 'Planner state is not exposed for this phase.';
+  const workerObservation = data.worker_observation || {};
+  const workerState = workerObservation.state;
+  $('worker_state').textContent = workerState === 'busy' ? 'Busy' : workerState === 'idle' ? 'Idle' : 'Unknown';
+  $('worker_detail').textContent = workerState === 'busy'
+    ? `OpenCode reports Worker activity${workerObservation.latest_completed_id ? `; last completed message ${workerObservation.latest_completed_id}` : ''}.`
+    : workerState === 'idle'
+      ? `OpenCode reports Worker idle${workerObservation.latest_completed_id ? `; last completed message ${workerObservation.latest_completed_id}` : ''}.`
+      : 'Worker state could not be observed from OpenCode.';
+  $('extract_state').textContent = extractionSide || 'Idle'; $('transport_state').textContent = transportLabel;
+  const outActive = transportActive && pending.direction === 'planner_to_worker', backActive = transportActive && pending.direction === 'worker_to_planner'; $('arrow_out').classList.toggle('active', outActive); $('arrow_back').classList.toggle('active', backActive); $('out_badge').textContent = outActive ? 'Active · Planner → Worker' : 'Idle'; $('back_badge').textContent = backActive ? 'Active · Worker → Planner' : transportActive && pending.direction === 'relayloop_to_planner' ? 'Requesting prompt · Planner' : 'Idle'; $('out_badge').classList.toggle('active', outActive); $('back_badge').classList.toggle('active', backActive);
+  const unresolvedTarget = held?.direction === 'planner_to_worker' ? 'worker' : held?.direction === 'worker_to_planner' ? 'planner' : null;
+  const displayExpected = held ? null : transportActive ? (pending.direction === 'planner_to_worker' ? 'worker' : pending.direction === 'worker_to_planner' || pending.direction === 'relayloop_to_planner' ? 'planner' : null) : (['waiting_for_planner','waiting_for_worker'].includes(phase) ? data.expected_turn : null);
+  $('worker_node').classList.toggle('expected', displayExpected === 'worker'); $('planner_node').classList.toggle('expected', displayExpected === 'planner');
+  $('worker_node').classList.toggle('unresolved-target', unresolvedTarget === 'worker'); $('planner_return').classList.toggle('unresolved-target', unresolvedTarget === 'planner');
+  let returnTag = $('planner_return_tag');
+  if (!returnTag) { returnTag = document.createElement('span'); returnTag.id = 'planner_return_tag'; returnTag.className = 'expected-tag'; returnTag.textContent = 'Unconfirmed target'; $('planner_return').append(returnTag); }
+  returnTag.hidden = unresolvedTarget !== 'planner';
+  $('worker_expected').textContent = held ? 'Unconfirmed target' : transportActive ? 'Delivery target' : 'Expected'; $('planner_expected').textContent = 'Expected';
+  $('worker_expected').hidden = displayExpected !== 'worker' && unresolvedTarget !== 'worker'; $('planner_expected').hidden = displayExpected !== 'planner';
+  $('planner_return').classList.toggle('queued-target', queuedForPlanner);
+  returnTag.textContent = unresolvedTarget === 'planner' ? 'Unconfirmed target' : phase === 'planner_ready_timeout' || phase === 'planner_readiness_error' ? 'Queued · not sent' : 'Queued · waiting';
+  returnTag.hidden = unresolvedTarget !== 'planner' && !queuedForPlanner;
+  const confirmed = data.last_confirmed_delivery;
+  const confirmedOut = confirmed?.direction === 'planner_to_worker', confirmedBack = confirmed?.direction === 'worker_to_planner';
+  const unresolvedOut = held?.direction === 'planner_to_worker', unresolvedBack = held?.direction === 'worker_to_planner';
+  $('out_badge').textContent = `${unresolvedOut ? 'Unresolved · Planner → Worker' : outActive ? 'Active · Planner → Worker' : 'Idle'}${confirmedOut ? '\n✓ Last confirmed receipt' : ''}`;
+  $('back_badge').textContent = `${unresolvedBack ? 'Unresolved · Worker → Planner' : backActive ? 'Active · Worker → Planner' : 'Idle'}${confirmedBack ? '\n✓ Last confirmed receipt' : ''}`;
+  if (queuedForPlanner) $('back_badge').textContent = `Queued · Worker → Planner\nNot sent`;
+  $('out_badge').classList.toggle('active', outActive); $('back_badge').classList.toggle('active', backActive);
+  $('out_badge').classList.toggle('confirmed', confirmedOut); $('back_badge').classList.toggle('confirmed', confirmedBack);
+  $('out_badge').classList.toggle('unresolved', unresolvedOut); $('back_badge').classList.toggle('unresolved', unresolvedBack);
+  $('back_badge').classList.toggle('queued', queuedForPlanner);
+  $('handoff_note').classList.toggle('unresolved', !!held); $('handoff_note').classList.toggle('queued', queuedForPlanner);
+  const queuedDetail = phase === 'planner_ready_timeout' ? 'Planner readiness timed out; Worker report remains queued and was not sent.' : phase === 'planner_readiness_error' ? 'Planner readiness could not be checked; Worker report remains queued and was not sent.' : 'Worker report is queued while Planner generation finishes and the composer becomes ready. No send has been attempted.';
+  const expectation = held ? `${held.reason || 'Delivery is unresolved; no unique destination receipt was confirmed'}; automation status: ${data.status || 'unknown'}` : queuedForPlanner ? queuedDetail : transportActive ? `delivery target: ${directionLabel(pending.direction) === 'Planner → Worker' ? 'Worker' : directionLabel(pending.direction) === 'Worker → Planner' ? 'Planner' : 'unknown'}; API expected turn: ${data.expected_turn || 'unknown'} (advances after confirmation)` : `expected next speaker: ${data.expected_turn || 'unknown'}`;
+  $('handoff_note').textContent = `${held ? `Delivery unresolved—not active: ${directionLabel(held.direction)}` : queuedForPlanner ? `Worker → Planner queued—not active (${transportLabel})` : `Transport ${transportLabel === 'Idle' ? 'idle' : `active: ${transportLabel}`}`}; ${expectation}; ${confirmed ? `last confirmed handoff: ${confirmed.direction} · ${confirmed.receipt?.destination_message_id || 'receipt recorded'}` : 'no confirmed handoff observed'}.`;
+  $('planner_countdown').textContent = turn.planner_wait_seconds_remaining != null ? `API-reported Planner countdown: ${Math.floor(turn.planner_wait_seconds_remaining / 60)}:${String(turn.planner_wait_seconds_remaining % 60).padStart(2,'0')} remaining` : '';
+  const workerWaiting = phase === 'waiting_for_worker';
+  observedDuration('extraction', extractionSide ? `${phase}:${pending.direction}:${pending.stage || ''}` : null, 'extract_estimate');
+  observedDuration('transport', transportActive ? `${phase}:${pending.direction}:${pending.stage || ''}` : null, 'transport_estimate');
+  observedDuration('planner', plannerWaiting ? `planner:${phase}` : null, 'planner_estimate');
+  observedDuration('worker', workerWaiting ? `worker:${phase}` : null, 'worker_estimate');
+  if (lastObservedPhase !== null && lastObservedPhase !== phase) observedTransitions.unshift({time:data.now || new Date().toLocaleString(), phase, previous:lastObservedPhase, direction:pending?.direction || '', duration:'—'});
+  lastObservedPhase = phase; observedTransitions.splice(30);
+  $('status').textContent = active ? 'Running' : 'Stopped';
+  $('status').className = 'value ' + (active ? 'ok' : 'state');
+  $('health').textContent = active ? 'Live ChatGPT/OpenCode messaging is enabled.' : 'Automation does not start automatically.';
+  if (active) {
+    const startEvent = (data.timeline || []).find((item) => item.kind === 'start');
+    if (startEvent && startEvent.time !== observedRunKey) {
+      observedRunKey = startEvent.time;
+      observedRunStartedAt = localTimestamp(startEvent.time);
+    } else if (!startEvent && observedRunStartedAt === null) {
+      observedRunKey = 'observed-running';
+      observedRunStartedAt = Date.now();
+    }
+    const elapsed = observedRunStartedAt === null ? 0 : Math.max(0, Math.floor((Date.now() - observedRunStartedAt) / 1000));
+    $('runtime').textContent = `${startEvent ? 'Elapsed' : 'Elapsed since observed'}: ${formatElapsed(elapsed)}`;
+  } else {
+    observedRunKey = null;
+    observedRunStartedAt = null;
+    $('runtime').textContent = 'Elapsed: —';
+  }
+  $('turn').textContent = phaseLabel(phase);
+  const wait = turn.planner_wait_seconds_remaining;
+  let detail = pending ? `${pending.direction} · ${pending.stage} · source ${pending.source_id}` :
+    `Expected next speaker: ${turn.expected_speaker || data.expected_turn || 'planner'}`;
+  if (wait !== null && wait !== undefined && (phase === 'waiting_for_planner' || phase === 'waiting_for_planner_completion')) {
+    detail += ` · Planner wait ${Math.floor(wait / 60)}:${String(wait % 60).padStart(2, '0')} remaining`;
+  }
+  $('turnsub').textContent = detail;
+  $('extraction').textContent = data.extraction || 'Idle';
+  $('delivery').textContent = data.delivery || 'No pending delivery';
+  $('lastplanner').textContent = data.last_planner_id ? `Last consumed Planner ID: ${data.last_planner_id}` : 'No Planner message consumed yet.';
+  $('lastworker').textContent = data.last_confirmed_delivery
+    ? `Last receipt: ${data.last_confirmed_delivery.direction} · ${data.last_confirmed_delivery.receipt?.destination_message_id || 'recorded'}`
+    : 'No confirmed delivery yet.';
+  $('errors').textContent = data.error || 'None reported';
+  $('errors').className = 'value ' + (data.error ? 'error' : '');
+  const locked = active || !!data.pending || !!data.unresolved;
+  $('start').disabled = locked || pairBusy;
+  $('refresh_run').disabled = active || pairBusy;
+  $('stop').disabled = !active || pairBusy;
+  $('save').disabled = locked || pairBusy;
+  $('verify').disabled = locked || pairDraft || pairBusy;
+  if (!dirty) {
+    $('planner_url').value = data.settings.planner_url || '';
+    $('worker_session').value = data.settings.worker_session || '';
+  }
+  $('clock').textContent = data.now || '';
+  const timeline = $('timeline');
+  timeline.replaceChildren();
+  const rows = (data.timeline || []).map((item, index) => {
+    const text = `${item.kind || ''} ${item.message || ''}`;
+    const kindText = String(item.kind || '').toLowerCase();
+    const direction = /relayloop.{0,12}planner/i.test(text) ? 'RelayLoop → Planner' : /planner.{0,12}worker/i.test(text) ? 'Planner → Worker' : /worker.{0,12}planner/i.test(text) ? 'Worker → Planner' : kindText === 'extract' && /planner.{0,24}assistant message/i.test(text) ? 'Planner → Worker' : kindText === 'extract' && /worker.{0,24}response/i.test(text) ? 'Worker → Planner' : kindText === 'error' && held ? directionLabel(held.direction) : '—';
+    const negative = /\b(unconfirmed|incomplete|not confirmed|not delivered|failed|error|unresolved)\b/i.test(text);
+    const confirmed = !negative && /\b(confirmed|receipt recorded|delivered successfully|completed successfully)\b/i.test(text);
+    const negatedFailure = /\b(no|not|without|never)\s+(?:(?:an?|the)\s+)?(?:error|failure|unresolved|failed)\b/i.test(text);
+    const unresolved = !negatedFailure && (/\b(unresolved|error|failed)\b/i.test(kindText) || /\b(unresolved|error|failed)\b/i.test(text));
+    const waiting = /\b(waiting|pending)\b/i.test(kindText + ' ' + text);
+    return {time:item.time || '', stamp:localTimestamp(item.time), event:`${item.kind || 'Event'} · ${item.message || ''}`,direction,duration:item.duration || '—',outcome:unresolved?'Unresolved':confirmed?'Confirmed':waiting?'Waiting':'Observed',kind:unresolved?'unresolved':confirmed?'confirmed':waiting?'waiting':'observed',source:0,index};
+  });
+  observedTransitions.forEach((item,index) => rows.push({time:item.time||'',stamp:localTimestamp(item.time),event:`UI-observed phase: ${item.previous} → ${item.phase}`,direction:item.direction==='planner_to_worker'?'Planner → Worker':item.direction==='worker_to_planner'?'Worker → Planner':'—',duration:'—',outcome:'Observed · UI-observed',kind:'observed',source:1,index}));
+  rows.sort((a,b) => (b.stamp ?? -Infinity) - (a.stamp ?? -Infinity) || a.source-b.source || a.index-b.index);
+  for (const item of rows) {
+    const row=document.createElement('li'); row.className=item.kind;
+    for (const [label,value,className] of [['Timestamp',item.time,'timestamp'],['Event',item.event,'event'],['Inferred direction',item.direction,'direction'],['Duration',item.duration,'duration'],['Outcome',item.outcome,'outcome']]) {
+      const cell=document.createElement(className==='event'?'b':'span'); cell.className=className; const caption=document.createElement('span'); caption.className='timeline-cell-label'; caption.textContent=`${label}: `; cell.append(caption,document.createTextNode(value||'—')); row.append(cell);
+    }
+    timeline.append(row);
+  }
+  if (!timeline.childElementCount) {
+    const row = document.createElement('li');
+    row.textContent = 'Ready — verify connections, then explicitly start automation.';
+    timeline.append(row);
+  }
+}
+
+function newPreviewId() {
+  let id;
+  do { id = 'preview-' + (crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random().toString(36).slice(2)}`); }
+  while (previewProfiles.some((profile) => profile.id === id));
+  return id;
+}
+function renderProfiles() {
+  const select = $('profile_select');
+  const options = previewProfiles.map((profile) => {
+    const option = document.createElement('option'); option.value = profile.id; option.textContent = profile.name || '(unnamed pair)'; return option;
+  });
+  if (pairDraft) { const draftOption = document.createElement('option'); draftOption.value = '__draft__'; draftOption.textContent = 'New pair draft'; options.push(draftOption); }
+  select.replaceChildren(...options);
+  select.disabled = pairDraft || !previewSeeded;
+  select.value = pairDraft ? '__draft__' : selectedProfileId || '';
+  const profile = previewProfiles.find((item) => item.id === selectedProfileId);
+  if (!pairDraft && !pairEditing) {
+    $('profile_name').value = profile?.name || '';
+    $('profile_id').textContent = profile?.id || 'Waiting for status…';
+    $('profile_planner').value = profile?.planner || '';
+    $('profile_worker').value = profile?.worker || '';
+    clearPairErrors();
+  }
+  const idValue = pairDraft ? 'Assigned on save' : profile?.id || 'Waiting for status…';
+  if (pairDraft) $('profile_id').textContent = idValue;
+  $('profile_id').title = idValue;
+  $('profile_id').setAttribute('aria-label', `Pair ID: ${idValue}`);
+  $('save_pair').hidden = pairDraft;
+  $('cancel_pair').hidden = !pairDraft;
+  $('discard_pair').hidden = !pairEditing || pairDraft;
+  for (const id of ['profile_name','profile_planner','profile_worker']) $(id).disabled = !previewSeeded || !!currentLockReason || pairBusy;
+  select.disabled = pairDraft || !previewSeeded || !!currentLockReason || dirty || pairEditing || pairBusy;
+  $('add_pair').disabled = !previewSeeded || !!currentLockReason || pairBusy;
+  $('save_pair').disabled = !previewSeeded || pairDraft || !!currentLockReason || pairBusy;
+  $('cancel_pair').disabled = !previewSeeded || pairBusy || !!currentLockReason;
+  $('discard_pair').disabled = !previewSeeded || pairBusy || !!currentLockReason;
+  if (!previewSeeded) $('pair_note').textContent = 'Loading current pair from status…';
+  else $('pair_note').textContent = currentLockReason || 'Profiles are saved locally and used by automation.';
+}
+function clearPairErrors() {
+  for (const [inputId, errorId] of [['profile_name','name_error'],['profile_planner','planner_error'],['profile_worker','worker_error']]) {
+    $(errorId).textContent = '';
+    $(inputId).removeAttribute('aria-invalid');
+  }
+}
+function setPairError(inputId, errorId, message) {
+  $(errorId).textContent = message;
+  if (message) $(inputId).setAttribute('aria-invalid', 'true');
+  else $(inputId).removeAttribute('aria-invalid');
+}
+async function commitProfile() {
+  const values = { name: $('profile_name').value.trim(), planner_url: $('profile_planner').value.trim(), worker_session: $('profile_worker').value.trim() };
+  const conflicts = { name:false, planner:false, worker:false };
+  const normalizeUrl = (value) => { try { const url = new URL(value.trim()); return `${url.protocol.toLowerCase()}//${url.host.toLowerCase()}${url.pathname.replace(/\/$/, '').toLowerCase()}`; } catch { return value.trim().toLowerCase(); } };
+  for (const profile of previewProfiles) {
+    if (!pairDraft && profile.id === selectedProfileId) continue;
+    conflicts.name ||= !!values.name && profile.name.trim().toLowerCase() === values.name.toLowerCase();
+    conflicts.planner ||= !!values.planner_url && normalizeUrl(profile.planner) === normalizeUrl(values.planner_url);
+    conflicts.worker ||= !!values.worker_session && profile.worker.trim() === values.worker_session;
+  }
+  const required = !values.name || !values.planner_url || !values.worker_session;
+  setPairError('profile_name','name_error',conflicts.name ? 'Name is already used.' : !values.name ? 'Name is required.' : '');
+  setPairError('profile_planner','planner_error',conflicts.planner ? 'Planner URL is already used.' : !values.planner_url ? 'Planner URL is required.' : '');
+  setPairError('profile_worker','worker_error',conflicts.worker ? 'Worker session ID is already used.' : !values.worker_session ? 'Worker session ID is required.' : '');
+  const bad = conflicts.name || conflicts.planner || conflicts.worker || required;
+  if (bad) { ($('name_error').textContent ? $('profile_name') : $('planner_error').textContent ? $('profile_planner') : $('profile_worker')).focus(); return; }
+  const result = await post('/api/pairs/save', {...values, ...(pairDraft ? {} : {id:selectedProfileId})});
+  if (!result) return;
+  pairDraft = false; pairEditing = false; dirty = false; await refresh();
+}
+
+async function refresh() {
+  if (refreshing) return;
+  refreshing = true;
+  try {
+    const response = await fetch('/api/status', { cache: 'no-store' });
+    if (!response.ok) throw new Error(`Status request failed (${response.status})`);
+    render(await response.json());
+  } catch (error) {
+    $('errors').textContent = String(error);
+    $('errors').className = 'value error';
+  } finally { refreshing = false; }
+}
+
+async function post(path, data = {}) {
+  const buttons = [$('refresh_run'), $('start'), $('stop'), $('save'), $('verify')];
+  pairBusy = true; renderProfiles();
+  buttons.forEach((button) => { button.disabled = true; });
+  $('message').textContent = 'Working…';
+  try {
+    const response = await fetch(path, { method: 'POST', headers: {
+      'Content-Type': 'application/json', 'X-CSRF-Token': csrf, 'Origin': location.origin,
+    }, body: JSON.stringify(data) });
+    const result = await response.json();
+    $('message').textContent = result.error || result.warning || (result.ok ? 'Completed.' : 'Request completed.');
+    if (result.field_errors) { const fields = {name:['profile_name','name_error'],planner_url:['profile_planner','planner_error'],worker_session:['profile_worker','worker_error']}; for (const [key,message] of Object.entries(result.field_errors)) { const [input,error] = fields[key] || []; if (input) { setPairError(input,error,message); focusAfterPost ||= input; } } }
+    if (path === '/api/settings' && result.ok) dirty = false;
+    await refresh();
+    return result.ok ? result : null;
+  } catch (error) { $('message').textContent = String(error); }
+  finally { await refresh(); pairBusy = false; await refresh(); if (focusAfterPost) { const input = $(focusAfterPost); if (!input.disabled) input.focus(); focusAfterPost = null; } }
+}
+
+for (const id of ['planner_url', 'worker_session']) $(id).addEventListener('input', () => { dirty = true; });
+$('save').onclick = () => post('/api/settings', { planner_url: $('planner_url').value, worker_session: $('worker_session').value });
+$('verify').onclick = () => post('/api/verify', { planner_url: $('planner_url').value, worker_session: $('worker_session').value });
+$('refresh_run').onclick = () => {
+  if (!confirm('Refresh Planner and clear all pending or unresolved session state? If a message may already have been sent, starting again could duplicate it.')) return;
+  post('/api/refresh');
+};
+$('start').onclick = () => post('/api/start');
+$('stop').onclick = () => post('/api/stop');
+$('profile_select').disabled = true;
+for (const id of ['profile_name','profile_planner','profile_worker','add_pair','save_pair']) $(id).disabled = true;
+$('pair_note').textContent = 'Loading current pair from status…';
+$('profile_select').addEventListener('change', async () => { const id = $('profile_select').value; if (dirty || currentLockReason) return; const result = await post('/api/pairs/select', {id}); if (result) { pairDraft = false; selectedProfileId=id; } });
+$('add_pair').onclick = () => {
+  if (pairDraft) { commitProfile(); return; }
+  pairDraft = true; pairEditing = true; dirty = false; renderProfiles(); $('pair_note').textContent = 'New pair draft — Add Pair again to save.'; $('profile_name').focus();
+};
+$('save_pair').onclick = commitProfile;
+$('cancel_pair').onclick = () => { pairDraft = false; pairEditing = false; dirty = false; renderProfiles(); };
+$('discard_pair').onclick = () => { pairEditing = false; dirty = false; clearPairErrors(); renderProfiles(); };
+for (const [inputId, errorId, key] of [['profile_name','name_error','name'],['profile_planner','planner_error','planner'],['profile_worker','worker_error','worker']]) {
+  $(inputId).setAttribute('aria-describedby', errorId);
+  $(inputId).addEventListener('input', () => { dirty = true; pairEditing = true; });
+  $(inputId).addEventListener('input', () => {
+    const value = $(inputId).value.trim();
+    const profile = previewProfiles.find((item) => !pairDraft && item.id === selectedProfileId);
+    const candidates = previewProfiles.filter((item) => item !== profile);
+    let duplicate = false;
+    if (value && key === 'name') duplicate = candidates.some((item) => item.name.trim().toLowerCase() === value.toLowerCase());
+    if (value && key === 'planner') {
+      const normalize = (value) => { try { const parsed = new URL(value.trim()); return `${parsed.protocol.toLowerCase()}//${parsed.host.toLowerCase()}${parsed.pathname.replace(/\/$/, '').toLowerCase()}`; } catch { return value.trim().toLowerCase(); } };
+      duplicate = candidates.some((item) => item.planner && normalize(item.planner) === normalize(value));
+    }
+    if (value && key === 'worker') duplicate = candidates.some((item) => item.worker.trim() === value);
+    setPairError(inputId, errorId, duplicate ? `${key === 'name' ? 'Name' : key === 'planner' ? 'Planner URL' : 'Worker session ID'} is already used.` : value ? '' : `${key === 'name' ? 'Name' : key === 'planner' ? 'Planner URL' : 'Worker session ID'} is required.`);
+  });
+}
+(async () => {
+  try { csrf = (await (await fetch('/api/csrf', { cache: 'no-store' })).json()).csrf; }
+  catch (error) { $('errors').textContent = String(error); }
+  await refresh();
+  setInterval(refresh, 1000);
+})();
+</script></body></html>
