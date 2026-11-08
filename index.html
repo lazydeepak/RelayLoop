@@ -12,7 +12,7 @@
 <div class="section-label">What I control</div>
 <button data-page="settings"><span class="icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></span><span class="nav-label">Settings</span></button>
 </aside><div class="sidebar-backdrop" id="sidebarBackdrop"></div><main class="main-area">
-<header class="top"><button class="hamburger-btn" id="hamburgerBtn" type="button" aria-label="Open navigation">☰</button><div><div class="eyebrow">RelayLoop · independent conversation relay</div><h1>Planner ↔ Worker</h1><div class="clock" id="clock">Local time</div></div><div class="actions"><button id="refresh_run" type="button" title="Refresh Planner and clear held session state">Refresh</button><button id="start" type="button" title="Pause all running pairs">Global Pause</button><button id="stop" type="button" disabled title="Stop all pairs">Global Stop</button><button id="project_dashboard" type="button" onclick="window.open('/project-dashboard','_blank')" title="Open the RelayLoop project progress dashboard">Project Dashboard</button></div></header>
+<header class="top"><button class="hamburger-btn" id="hamburgerBtn" type="button" aria-label="Open navigation">☰</button><div><div class="eyebrow">RelayLoop · independent conversation relay</div><h1>Planner ↔ Worker</h1><div class="clock" id="clock">Local time</div><div class="sub" id="status_indicator">Loading…</div></div><div class="actions"><button id="refresh_run" type="button" title="Refresh Planner and clear held session state">Refresh</button><button id="start" type="button" title="Pause all running pairs">Global Pause</button><button id="stop" type="button" disabled title="Stop all pairs">Global Stop</button><button id="project_dashboard" type="button" onclick="window.open('/project-dashboard','_blank')" title="Open the RelayLoop project progress dashboard">Project Dashboard</button></div></header>
 <section id="page-overview" class="page active">
 <section class="layout">
 <article class="card full"><div class="label">Active pairs</div><div class="sub">All saved pairs with live relay state. Multiple pairs can run concurrently.</div><div id="active_pairs" class="pairs-list mt-12"></div></article>
@@ -444,16 +444,21 @@ async function commitProfile() {
   pairDraft = false; pairEditing = false; dirty = false; await refresh();
 }
 
+let lastSuccessfulRefresh = null;
 async function refresh() {
   if (refreshing) return;
   refreshing = true;
+  if ($('status_indicator')) $('status_indicator').textContent = lastSuccessfulRefresh ? 'Loading…' : 'Loading status…';
   try {
     const response = await fetch('/api/status', { cache: 'no-store' });
     if (!response.ok) throw new Error(`Status request failed (${response.status})`);
     render(await response.json());
+    lastSuccessfulRefresh = Date.now();
+    if ($('status_indicator')) $('status_indicator').textContent = `Live · ${new Date().toLocaleTimeString()}`;
   } catch (error) {
     $('errors').textContent = String(error);
     $('errors').className = 'value error';
+    if ($('status_indicator')) $('status_indicator').textContent = lastSuccessfulRefresh ? 'Status not loaded — retrying…' : 'Status not loaded — waiting for first response…';
   } finally { refreshing = false; }
 }
 
