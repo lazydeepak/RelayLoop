@@ -507,6 +507,7 @@ class App:
                 "error": self.last_error,
                 "timeline": relay["activity"], "pairs": self.pairs, "selected_pair_id": self.selected_pair_id,
                 "pairs_status": pairs_status,
+                "runtime": str(self.runtime), "adapter_dir": str(self.adapter_dir), "default_port": DEFAULT_PORT,
                 "settings": self.settings, "now": time.strftime("%Y-%m-%d %H:%M:%S %Z", time.localtime())}
 
     def save(self, data):
