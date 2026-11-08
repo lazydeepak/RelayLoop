@@ -173,7 +173,7 @@ class App:
             "created_at": now,
             "updated_at": now,
             "milestones": [
-                {"id": "m1", "title": "Initial RelayLoop import", "status": "done",
+                {"id": "m1", "title": "Initial RelayLoop import", "status": "done", "priority": 1,
                  "description": "Standalone one-pair relay imported and adapted.", "created_at": now, "updated_at": now},
                 {"id": "m2", "title": "Resolve dashboard port conflict", "status": "done",
                  "description": "Default port changed from 5555 to 5566 to avoid TerminalBot.", "created_at": now, "updated_at": now},
@@ -212,6 +212,17 @@ class App:
             ],
         }
 
+    def _normalize_project_progress(self, data):
+        for milestone in data.get("milestones", []):
+            milestone.setdefault("priority", 5)
+            try: milestone["priority"] = int(milestone.get("priority", 5))
+            except (TypeError, ValueError): milestone["priority"] = 5
+        for job in data.get("jobs", []):
+            job.setdefault("priority", 5)
+            try: job["priority"] = int(job.get("priority", 5))
+            except (TypeError, ValueError): job["priority"] = 5
+        return data
+
     def _load_project_progress(self):
         try:
             data = json.loads(self.project_progress_path.read_text(encoding="utf8"))
@@ -222,12 +233,12 @@ class App:
                 data.setdefault("tests", [])
                 data.setdefault("corrections", [])
                 data.setdefault("events", [])
-                return data
+                return self._normalize_project_progress(data)
         except FileNotFoundError:
             pass
         except (ValueError, TypeError, OSError):
             self.last_error = "Saved project progress is invalid; reseeding"
-        data = self._default_project_progress()
+        data = self._normalize_project_progress(self._default_project_progress())
         self._save_project_progress(data)
         return data
 
@@ -288,10 +299,19 @@ class App:
         now = self._now_iso()
         with self.lock:
             if kind == "milestone":
+                existing = next((m for m in self.project_progress["milestones"] if m["id"] == payload.get("id")), None) if payload.get("id") else None
+                if "priority" in payload:
+                    try: priority = int(payload.get("priority", 5))
+                    except (TypeError, ValueError): priority = 5
+                elif existing:
+                    priority = existing.get("priority", 5)
+                else:
+                    priority = 5
                 milestone = {
                     "id": payload.get("id") or f"m{len(self.project_progress['milestones']) + 1}",
                     "title": str(payload.get("title") or "Untitled milestone").strip(),
                     "status": str(payload.get("status") or "pending").strip(),
+                    "priority": priority,
                     "description": str(payload.get("description") or "").strip(),
                     "created_at": now, "updated_at": now,
                 }
@@ -306,10 +326,19 @@ class App:
                     {"id": f"e{len(self.project_progress['events']) + 1}", "kind": "milestone",
                      "title": milestone["title"], "timestamp": now, "details": milestone["status"]})
             elif kind == "job":
+                existing_job = next((j for j in self.project_progress["jobs"] if j["id"] == payload.get("id")), None) if payload.get("id") else None
+                if "priority" in payload:
+                    try: job_priority = int(payload.get("priority", 5))
+                    except (TypeError, ValueError): job_priority = 5
+                elif existing_job:
+                    job_priority = existing_job.get("priority", 5)
+                else:
+                    job_priority = 5
                 job = {
                     "id": payload.get("id") or f"j{len(self.project_progress['jobs']) + 1}",
                     "title": str(payload.get("title") or "Untitled job").strip(),
                     "kind": str(payload.get("job_kind") or payload.get("job_type") or "edit").strip(),
+                    "priority": job_priority,
                     "files": list(payload.get("files") or []),
                     "intended": str(payload.get("intended") or "").strip(),
                     "status": str(payload.get("status") or "done").strip(),

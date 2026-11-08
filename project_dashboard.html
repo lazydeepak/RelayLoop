@@ -91,7 +91,7 @@ button:hover{border-color:var(--cyan);color:var(--cyan)}
 <h2>Milestones</h2>
 <div class="table-wrap">
 <table>
-<thead><tr><th>ID</th><th>Title</th><th>Status</th><th>Description</th><th>Updated</th></tr></thead>
+<thead><tr><th>Priority</th><th>ID</th><th>Title</th><th>Status</th><th>Description</th><th>Updated</th></tr></thead>
 <tbody id="milestoneTable"></tbody>
 </table>
 </div>
@@ -101,7 +101,7 @@ button:hover{border-color:var(--cyan);color:var(--cyan)}
 <h2>Jobs and upgrades</h2>
 <div class="table-wrap">
 <table>
-<thead><tr><th>ID</th><th>Title</th><th>Kind</th><th>Status</th><th>Files</th><th>Intended</th><th>Result</th><th>Time</th></tr></thead>
+<thead><tr><th>Priority</th><th>ID</th><th>Title</th><th>Kind</th><th>Status</th><th>Files</th><th>Intended</th><th>Result</th><th>Time</th></tr></thead>
 <tbody id="jobTable"></tbody>
 </table>
 </div>
@@ -138,6 +138,49 @@ button:hover{border-color:var(--cyan);color:var(--cyan)}
 </section>
 
 <section class="section card">
+<h2>AI agent guidelines (primary)</h2>
+<div class="sub">Record the milestone before work, keep status current, validate before marking done, and record corrections instead of silently changing history.</div>
+<ol style="margin:10px 0 0 18px;line-height:1.7">
+<li>Create or update the milestone/job with intended scope and priority before editing files.</li>
+<li>Use <code>in_progress</code> while working; the file watcher records edits automatically.</li>
+<li>Run validation/tests before marking <code>done</code>.</li>
+<li>If a prior milestone or job was wrong, add a correction entry and mark the target <code>corrected</code>.</li>
+<li>Keep priority numeric (lower number = higher priority).</li>
+</ol>
+</section>
+
+<section class="section card">
+<h2>Manage milestones</h2>
+<div class="form" style="grid-template-columns:repeat(4,minmax(0,1fr))">
+<label>ID<input id="m_id" placeholder="auto"></label>
+<label>Title<input id="m_title"></label>
+<label>Status<select id="m_status"><option>pending</option><option>in_progress</option><option>done</option><option>corrected</option></select></label>
+<label>Priority<input id="m_priority" type="number" value="5"></label>
+</div>
+<label>Description<textarea id="m_desc" style="width:100%;min-height:60px;background:#09121c;color:var(--text);border:1px solid var(--line);border-radius:8px;padding:8px"></textarea></label>
+<div class="actions" style="margin-top:10px"><button onclick="saveMilestone()">Save milestone</button></div>
+<div class="sub" id="m_msg"></div>
+</section>
+
+<section class="section card">
+<h2>Manage jobs</h2>
+<div class="form" style="grid-template-columns:repeat(4,minmax(0,1fr))">
+<label>ID<input id="j_id" placeholder="auto"></label>
+<label>Title<input id="j_title"></label>
+<label>Kind<input id="j_kind" value="edit"></label>
+<label>Status<select id="j_status"><option>pending</option><option>in_progress</option><option>done</option><option>failed</option><option>corrected</option></select></label>
+</div>
+<div class="form" style="grid-template-columns:repeat(3,minmax(0,1fr))">
+<label>Priority<input id="j_priority" type="number" value="5"></label>
+<label>Files (comma)<input id="j_files"></label>
+<label>Intended<input id="j_intended"></label>
+</div>
+<label>Result<textarea id="j_result" style="width:100%;min-height:60px;background:#09121c;color:var(--text);border:1px solid var(--line);border-radius:8px;padding:8px"></textarea></label>
+<div class="actions" style="margin-top:10px"><button onclick="saveJob()">Save job</button></div>
+<div class="sub" id="j_msg"></div>
+</section>
+
+<section class="section card">
 <h2>Activity timeline</h2>
 <div class="timeline" id="timeline"></div>
 </section>
@@ -145,6 +188,60 @@ button:hover{border-color:var(--cyan);color:var(--cyan)}
 
 <script>
 const $ = (id) => document.getElementById(id);
+let csrf = '';
+async function ensureCsrf() {
+  if (csrf) return csrf;
+  const res = await fetch('/api/csrf');
+  csrf = (await res.json()).csrf;
+  return csrf;
+}
+async function postRecord(payload) {
+  await ensureCsrf();
+  const res = await fetch('/api/project/record', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'Origin': location.origin, 'X-CSRF-Token': csrf },
+    body: JSON.stringify(payload)
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error || 'Request failed');
+  return data;
+}
+function val(id) { const el = $(id); return el ? el.value.trim() : ''; }
+async function saveMilestone() {
+  try {
+    await postRecord({
+      kind: 'milestone',
+      id: val('m_id') || undefined,
+      title: val('m_title') || 'Untitled milestone',
+      status: val('m_status') || 'pending',
+      priority: parseInt(val('m_priority') || '5', 10),
+      description: val('m_desc')
+    });
+    $('m_msg').textContent = 'Milestone saved.';
+    refresh();
+  } catch (error) {
+    $('m_msg').textContent = error.message;
+  }
+}
+async function saveJob() {
+  try {
+    await postRecord({
+      kind: 'job',
+      id: val('j_id') || undefined,
+      title: val('j_title') || 'Untitled job',
+      job_kind: val('j_kind') || 'edit',
+      status: val('j_status') || 'pending',
+      priority: parseInt(val('j_priority') || '5', 10),
+      files: val('j_files').split(',').map((item) => item.trim()).filter(Boolean),
+      intended: val('j_intended'),
+      result: val('j_result')
+    });
+    $('j_msg').textContent = 'Job saved.';
+    refresh();
+  } catch (error) {
+    $('j_msg').textContent = error.message;
+  }
+}
 function badge(status){ return `<span class="badge ${status}">${status.replace('_',' ')}</span>`; }
 function shortTime(value){ return value ? String(value).replace('T',' ').slice(0,19) : '—'; }
 function countBy(items,key){ const out={}; for(const item of items) out[item[key]] = (out[item[key]]||0)+1; return out; }
@@ -157,6 +254,8 @@ function barRows(container, entries, color){
 async function refresh(){
   const res = await fetch('/api/project');
   const data = await res.json();
+  (data.milestones || []).sort((a, b) => (a.priority || 5) - (b.priority || 5) || String(a.id).localeCompare(String(b.id)));
+  (data.jobs || []).sort((a, b) => (a.priority || 5) - (b.priority || 5) || String(a.id).localeCompare(String(b.id)));
   const s = data.summary || {};
   $('updated').textContent = `Last updated: ${shortTime(data.updated_at)} · ${data.project || 'RelayLoop'}`;
   $('mTotal').textContent = s.milestones?.total || 0;
@@ -191,9 +290,9 @@ async function refresh(){
   barRows($('fileBars'), topFiles.map(([p,n])=>[p.split('/').pop(), n, fileTotal]), 'var(--violet)');
 
   $('milestoneTable').innerHTML = (data.milestones||[]).map(m =>
-    `<tr><td>${m.id}</td><td>${m.title}</td><td>${badge(m.status)}</td><td>${m.description||''}</td><td>${shortTime(m.updated_at||m.created_at)}</td></tr>`).join('') || '<tr><td colspan="5">No milestones.</td></tr>';
+    `<tr><td>${m.priority ?? 5}</td><td>${m.id}</td><td>${m.title}</td><td>${badge(m.status)}</td><td>${m.description||''}</td><td>${shortTime(m.updated_at||m.created_at)}</td></tr>`).join('') || '<tr><td colspan="6">No milestones.</td></tr>';
   $('jobTable').innerHTML = (data.jobs||[]).map(j =>
-    `<tr><td>${j.id}</td><td>${j.title}</td><td>${j.kind}</td><td>${badge(j.status)}</td><td>${(j.files||[]).join(', ')||'—'}</td><td>${j.intended||''}</td><td>${j.result||''}</td><td>${shortTime(j.timestamp)}</td></tr>`).join('') || '<tr><td colspan="8">No jobs.</td></tr>';
+    `<tr><td>${j.priority ?? 5}</td><td>${j.id}</td><td>${j.title}</td><td>${j.kind}</td><td>${badge(j.status)}</td><td>${(j.files||[]).join(', ')||'—'}</td><td>${j.intended||''}</td><td>${j.result||''}</td><td>${shortTime(j.timestamp)}</td></tr>`).join('') || '<tr><td colspan="9">No jobs.</td></tr>';
   $('testTable').innerHTML = (data.tests||[]).map(t =>
     `<tr><td>${t.name}</td><td>${badge(t.status)}</td><td>${t.details||''}</td><td>${shortTime(t.timestamp)}</td></tr>`).join('') || '<tr><td colspan="4">No tests.</td></tr>';
   $('fileTable').innerHTML = (data.recent_file_changes||[]).slice(0,40).map(c =>
