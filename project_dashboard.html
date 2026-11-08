@@ -99,7 +99,7 @@ button:hover{border-color:var(--cyan);color:var(--cyan)}
 <h2>Milestones</h2>
 <div class="table-wrap">
 <table>
-<thead><tr><th>Priority</th><th>ID</th><th>Title</th><th>Status</th><th>Description</th><th>Updated</th></tr></thead>
+<thead><tr><th>Priority</th><th>Move</th><th>ID</th><th>Title</th><th>Status</th><th>Description</th><th>Updated</th></tr></thead>
 <tbody id="milestoneTable"></tbody>
 </table>
 </div>
@@ -109,7 +109,7 @@ button:hover{border-color:var(--cyan);color:var(--cyan)}
 <h2>Jobs and upgrades</h2>
 <div class="table-wrap">
 <table>
-<thead><tr><th>Priority</th><th>ID</th><th>Title</th><th>Kind</th><th>Status</th><th>Files</th><th>Intended</th><th>Result</th><th>Time</th></tr></thead>
+<thead><tr><th>Priority</th><th>Move</th><th>ID</th><th>Title</th><th>Kind</th><th>Status</th><th>Files</th><th>Intended</th><th>Result</th><th>Time</th></tr></thead>
 <tbody id="jobTable"></tbody>
 </table>
 </div>
@@ -226,6 +226,8 @@ const $ = (id) => document.getElementById(id);
 let csrf = '';
 let milestoneMap = {};
 let jobMap = {};
+let milestoneList = [];
+let jobList = [];
 async function ensureCsrf() {
   if (csrf) return csrf;
   const res = await fetch('/api/csrf');
@@ -267,6 +269,46 @@ function openJobModal(data) {
   $('jobModal').classList.add('open');
 }
 function closeJobModal() { $('jobModal').classList.remove('open'); }
+async function moveMilestone(id, direction) {
+  const list = [...milestoneList].sort((a, b) => (a.priority || 5) - (b.priority || 5) || String(a.id).localeCompare(String(b.id)));
+  const index = list.findIndex((item) => item.id === id);
+  const nextIndex = index + direction;
+  if (index < 0 || nextIndex < 0 || nextIndex >= list.length) return;
+  const item = list[index];
+  const neighbor = list[nextIndex];
+  const itemPriority = item.priority ?? 5;
+  const neighborPriority = neighbor.priority ?? 5;
+  const newPriority = direction < 0
+    ? (itemPriority <= neighborPriority ? neighborPriority - 1 : itemPriority)
+    : (itemPriority >= neighborPriority ? neighborPriority + 1 : itemPriority);
+  if (newPriority === itemPriority) return;
+  try {
+    await postRecord({ kind: 'milestone', id: item.id, title: item.title, status: item.status, priority: newPriority, description: item.description });
+    refresh();
+  } catch (error) {
+    $('m_modal_msg').textContent = error.message;
+  }
+}
+async function moveJob(id, direction) {
+  const list = [...jobList].sort((a, b) => (a.priority || 5) - (b.priority || 5) || String(a.id).localeCompare(String(b.id)));
+  const index = list.findIndex((item) => item.id === id);
+  const nextIndex = index + direction;
+  if (index < 0 || nextIndex < 0 || nextIndex >= list.length) return;
+  const item = list[index];
+  const neighbor = list[nextIndex];
+  const itemPriority = item.priority ?? 5;
+  const neighborPriority = neighbor.priority ?? 5;
+  const newPriority = direction < 0
+    ? (itemPriority <= neighborPriority ? neighborPriority - 1 : itemPriority)
+    : (itemPriority >= neighborPriority ? neighborPriority + 1 : itemPriority);
+  if (newPriority === itemPriority) return;
+  try {
+    await postRecord({ kind: 'job', id: item.id, title: item.title, job_kind: item.kind, status: item.status, priority: newPriority, files: item.files || [], intended: item.intended || '', result: item.result || '' });
+    refresh();
+  } catch (error) {
+    $('j_modal_msg').textContent = error.message;
+  }
+}
 async function saveMilestone() {
   try {
     await postRecord({
@@ -364,11 +406,13 @@ async function refresh(){
   barRows($('fileBars'), topFiles.map(([p,n])=>[p.split('/').pop(), n, fileTotal]), 'var(--violet)');
 
   milestoneMap = Object.fromEntries((data.milestones || []).map((m) => [m.id, m]));
+  milestoneList = [...(data.milestones || [])].sort((a, b) => (a.priority || 5) - (b.priority || 5) || String(a.id).localeCompare(String(b.id)));
   $('milestoneTable').innerHTML = (data.milestones||[]).map(m =>
-    `<tr data-id="${m.id}" style="cursor:pointer"><td>${m.priority ?? 5}</td><td>${m.id}</td><td>${m.title}</td><td>${badge(m.status)}</td><td>${m.description||''}</td><td>${shortTime(m.updated_at||m.created_at)}</td></tr>`).join('') || '<tr><td colspan="6">No milestones.</td></tr>';
+    `<tr data-id="${m.id}" style="cursor:pointer"><td>${m.priority ?? 5}</td><td><button onclick="event.stopPropagation();moveMilestone('${m.id}',-1)">▲</button><button onclick="event.stopPropagation();moveMilestone('${m.id}',1)">▼</button></td><td>${m.id}</td><td>${m.title}</td><td>${badge(m.status)}</td><td>${m.description||''}</td><td>${shortTime(m.updated_at||m.created_at)}</td></tr>`).join('') || '<tr><td colspan="7">No milestones.</td></tr>';
+  jobList = [...(data.jobs || [])].sort((a, b) => (a.priority || 5) - (b.priority || 5) || String(a.id).localeCompare(String(b.id)));
   jobMap = Object.fromEntries((data.jobs || []).map((j) => [j.id, j]));
   $('jobTable').innerHTML = (data.jobs||[]).map(j =>
-    `<tr data-id="${j.id}" style="cursor:pointer"><td>${j.priority ?? 5}</td><td>${j.id}</td><td>${j.title}</td><td>${j.kind}</td><td>${badge(j.status)}</td><td>${(j.files||[]).join(', ')||'—'}</td><td>${j.intended||''}</td><td>${j.result||''}</td><td>${shortTime(j.timestamp)}</td></tr>`).join('') || '<tr><td colspan="9">No jobs.</td></tr>';
+    `<tr data-id="${j.id}" style="cursor:pointer"><td>${j.priority ?? 5}</td><td><button onclick="event.stopPropagation();moveJob('${j.id}',-1)">▲</button><button onclick="event.stopPropagation();moveJob('${j.id}',1)">▼</button></td><td>${j.id}</td><td>${j.title}</td><td>${j.kind}</td><td>${badge(j.status)}</td><td>${(j.files||[]).join(', ')||'—'}</td><td>${j.intended||''}</td><td>${j.result||''}</td><td>${shortTime(j.timestamp)}</td></tr>`).join('') || '<tr><td colspan="10">No jobs.</td></tr>';
   $('testTable').innerHTML = (data.tests||[]).map(t =>
     `<tr><td>${t.name}</td><td>${badge(t.status)}</td><td>${t.details||''}</td><td>${shortTime(t.timestamp)}</td></tr>`).join('') || '<tr><td colspan="4">No tests.</td></tr>';
   $('fileTable').innerHTML = (data.recent_file_changes||[]).slice(0,40).map(c =>
