@@ -24,7 +24,7 @@ ROOT = Path(__file__).resolve().parent
 ARCHIVE = ROOT / "controller/releases/47bb3b7/safeguarded-cli.tar.gz"
 CHECKSUM = ROOT / "controller/releases/47bb3b7/safeguarded-cli.tar.gz.sha256"
 DEFAULT_RUNTIME = Path.home() / ".local/state/relayloop/standalone"
-DEFAULT_PORT = 5555
+DEFAULT_PORT = 5566
 DEFAULTS = {
     "planner_url": "https://chatgpt.com/g/g-p-6ab749f725548191934d1e5c4da00f2a-bot/c/6ae4d33a-bee0-83ec-9308-7d48b781c915",
     "worker_session": "ses_e68a35de3ffep9JYScN5236MsG",

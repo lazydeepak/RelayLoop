@@ -9,7 +9,7 @@ cd /Users/lazydeepak/dev/RelayLoop
 npm run dev
 ```
 
-The dashboard binds to `127.0.0.1:5555` by default and prints its URL. Override the port with `--port`; if the selected port is busy, startup reports the bind error rather than silently choosing another port. It never starts automation automatically. Only Planner URL and Worker session ID are saved as configuration under `~/.local/state/relayloop/standalone` (or `--runtime PATH`); adapter dependencies are runtime support, while logs and relay state are memory-only. Existing Relay Beacon data and release archives are left untouched.
+The dashboard binds to `127.0.0.1:5566` by default and prints its URL. Override the port with `--port`; if the selected port is busy, startup reports the bind error rather than silently choosing another port. It never starts automation automatically. Only Planner URL and Worker session ID are saved as configuration under `~/.local/state/relayloop/standalone` (or `--runtime PATH`); adapter dependencies are runtime support, while logs and relay state are memory-only. Existing Relay Beacon data and release archives are left untouched.
 
 ## Use
 

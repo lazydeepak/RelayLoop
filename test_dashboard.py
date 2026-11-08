@@ -264,7 +264,7 @@ class DashboardTests(unittest.TestCase):
         app = self.app()
         app.relay.interval = 0.01
         self.assertTrue(app.verify()["ok"])
-        self.assertEqual(DEFAULT_PORT, 5555)
+        self.assertEqual(DEFAULT_PORT, 5566)
         server = make_server(app, port=0)
         thread = threading.Thread(target=server.serve_forever, daemon=True); thread.start()
         try:
