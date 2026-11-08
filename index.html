@@ -39,8 +39,34 @@
 @media(max-width:740px){.layout{grid-template-columns:repeat(2,minmax(0,1fr))}.live,.legacy,.full,.wide{grid-column:1/-1}.live-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.pair-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.timeline li{grid-template-columns:repeat(2,minmax(0,1fr))}.timeline-head{display:none}.timeline-cell-label{position:static!important;display:block;width:auto;height:auto;padding:0;margin:0;overflow:visible;clip:auto;white-space:normal;color:var(--muted);font-size:10px;text-transform:uppercase;border:0}}
 @media(max-width:480px){main{padding:16px 12px}.layout{grid-template-columns:minmax(0,1fr)}.top{align-items:stretch;flex-direction:column;gap:14px}.actions{width:100%;gap:8px}.actions button{flex:1;padding:10px 8px}.live-grid,.pair-grid,.form{grid-template-columns:minmax(0,1fr)}.track{grid-template-columns:minmax(0,1fr);justify-items:stretch;gap:6px;padding:10px}.node{text-align:center;padding:8px 6px;font-size:12px}.track-segment{flex-direction:row;justify-content:center;align-items:center;gap:8px}.track-segment .arrow{transform:rotate(90deg)}.track-badge{max-width:100%;overflow-wrap:anywhere;white-space:pre-line}.timeline li{grid-template-columns:minmax(0,1fr)}.timeline-head{display:none}.form-actions{flex-wrap:wrap}.pair-note{margin-left:0}}
 .track-badge.unresolved{color:var(--red);font-weight:700}.track-note.unresolved{border-left-color:var(--red);color:#ffd5d5}.node.unresolved-target{border-color:var(--red);color:var(--red)}.track-badge.queued{color:var(--amber);font-weight:700}.track-note.queued{border-left-color:var(--amber)}.node.queued-target{border-color:var(--amber);color:var(--amber)}
-</style></head><body><main>
-<header class="top"><div><div class="eyebrow">RelayLoop · independent conversation relay</div><h1>Planner ↔ Worker</h1><div class="clock" id="clock">Local time</div></div><div class="actions"><button id="refresh_run" type="button" title="Refresh Planner and clear held session state">Refresh</button><button id="start">Start Automation</button><button id="stop" disabled>Graceful Stop</button><button id="project_dashboard" type="button" onclick="window.open('/project-dashboard','_blank')" title="Open the RelayLoop project progress dashboard">Project Dashboard</button></div></header>
+</style><style>
+.app-shell{display:grid;grid-template-columns:240px 1fr;min-height:100vh}
+.sidebar{background:var(--panel);border-right:1px solid var(--line);padding:16px;display:flex;flex-direction:column;gap:8px}
+.sidebar .brand{display:flex;align-items:center;gap:10px;padding:8px 10px;margin-bottom:8px}
+.sidebar .brand-title{font-size:12px;font-weight:700;letter-spacing:.16em;text-transform:uppercase}
+.sidebar .brand-sub{font-size:9px;font-family:'IBM Plex Mono',monospace;color:var(--cyan);letter-spacing:.12em;text-transform:uppercase}
+.sidebar .section-label{font-size:10px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--cyan);opacity:.7;padding:10px 10px 4px}
+.sidebar button{width:100%;display:flex;align-items:center;gap:10px;padding:9px 10px;border-radius:8px;border:1px solid transparent;background:transparent;color:var(--muted);font-size:12px;font-weight:500;cursor:pointer;text-align:left}
+.sidebar button:hover{color:var(--text);background:rgba(77,226,255,.08)}
+.sidebar button.active{background:var(--cyan);color:#06101c;box-shadow:0 4px 14px rgba(77,226,255,.25)}
+.sidebar button .icon{width:16px;text-align:center}
+.main-area{min-width:0;padding:20px;overflow:auto}
+.page{display:none}
+.page.active{display:block}
+@media(max-width:900px){.app-shell{grid-template-columns:1fr}.sidebar{display:none}}
+</style>
+</head><body><div class="app-shell"><aside class="sidebar" id="sidebar">
+<div class="brand"><div style="width:30px;height:30px;border-radius:8px;background:linear-gradient(135deg,#4de2ff,#43d17a);display:grid;place-items:center;font-weight:700;color:#06101c">R</div><div><div class="brand-title">RelayLoop</div><div class="brand-sub">Secure command center</div></div></div>
+<div class="section-label">What is happening</div>
+<button data-page="overview" class="active"><span class="icon">O</span>Overview</button>
+<button data-page="project"><span class="icon">P</span>Project Dashboard</button>
+<div class="section-label">Where I work</div>
+<button data-page="pairs"><span class="icon">R</span>Pairs</button>
+<button data-page="connections"><span class="icon">C</span>Connections</button>
+<div class="section-label">What I control</div>
+<button data-page="settings"><span class="icon">S</span>Settings</button>
+</aside><main class="main-area">
+<section id="page-overview" class="page active"><header class="top"><div><div class="eyebrow">RelayLoop · independent conversation relay</div><h1>Planner ↔ Worker</h1><div class="clock" id="clock">Local time</div></div><div class="actions"><button id="refresh_run" type="button" title="Refresh Planner and clear held session state">Refresh</button><button id="start">Start Automation</button><button id="stop" disabled>Graceful Stop</button><button id="project_dashboard" type="button" onclick="window.open('/project-dashboard','_blank')" title="Open the RelayLoop project progress dashboard">Project Dashboard</button></div></header>
 <section class="layout">
 <article class="card full"><div class="label">Connections · one active pair</div><section class="pair-preview" aria-label="Pair profiles"><div class="pair-head"><div class="pair-title">Pair profiles</div></div><div class="sub">Saved locally · selected pair is used by Verify and Start.</div><div class="pair-grid"><label>Select pair<select id="profile_select" aria-label="Select pair"></select></label><label>Pair name<input id="profile_name" autocomplete="off"><span class="pair-errors" id="name_error" aria-live="polite"></span></label><label>Pair ID<span class="pair-id-value" role="textbox" aria-readonly="true" aria-label="Pair ID"><span class="pair-id-placeholder" id="profile_id">Waiting for status…</span><span class="readonly-tag" aria-hidden="true">READ-ONLY</span></span></label><label>Planner URL<input id="profile_planner" autocomplete="off"><span class="pair-errors" id="planner_error" aria-live="polite"></span></label><label>Worker session ID<input id="profile_worker" autocomplete="off"><span class="pair-errors" id="worker_error" aria-live="polite"></span></label></div><div class="pair-actions"><button class="future" id="add_pair" type="button">Add Pair</button><button class="future" id="save_pair" type="button">Save Pair</button><button id="cancel_pair" type="button" hidden>Cancel draft</button><button id="discard_pair" type="button" hidden>Discard edits</button><span class="pair-note" id="pair_note">Saved locally · selected pair is used by Verify and Start.</span></div></section><div class="runtime-heading">Current runtime connection · used by Save Connections, Verify, and automation</div><div class="form"><label>Planner URL<input id="planner_url" autocomplete="off"></label><label>Worker session ID<input id="worker_session" autocomplete="off"></label></div><div class="form-actions"><button id="save">Save Connections</button><button id="verify">Verify Connections</button></div><div class="sub" id="message">Verify checks both destinations without starting the relay. Start continues an active turn from either side; when both are idle, Planner goes first.</div></article>
 <section class="card live" aria-labelledby="live-title"><div class="live-head"><h2 id="live-title">Live Run</h2><span class="label">Observed status</span></div><div class="track" role="group" aria-label="Planner to Worker to Planner handoff track"><span class="node" id="planner_node">Planner<span class="expected-tag" id="planner_expected" hidden>Expected</span></span><div class="track-segment"><span class="arrow" id="arrow_out" aria-hidden="true">→</span><span class="track-badge" id="out_badge">Idle</span></div><span class="node" id="worker_node">Worker<span class="expected-tag" id="worker_expected" hidden>Expected</span></span><div class="track-segment"><span class="arrow" id="arrow_back" aria-hidden="true">→</span><span class="track-badge" id="back_badge">Idle</span></div><span class="node" id="planner_return">Planner</span></div><div class="track-note" id="handoff_note" role="status">Transport idle; no confirmed handoff observed.</div><div class="live-grid"><article class="live-state"><div class="label">Planner</div><div class="value" id="planner_state">Unknown</div><div class="sub" id="planner_detail">Planner state is not exposed.</div><div class="estimate" id="planner_estimate">UI-observed estimate: —</div></article><article class="live-state"><div class="label">Worker</div><div class="value" id="worker_state">Unknown</div><div class="sub" id="worker_detail">Worker readiness is not exposed.</div><div class="estimate" id="worker_estimate">UI-observed estimate: —</div></article><article class="live-state"><div class="label">Extraction</div><div class="value" id="extract_state">Idle</div><div class="estimate" id="extract_estimate">UI-observed estimate: —</div></article><article class="live-state"><div class="label">Transport</div><div class="value" id="transport_state">Idle</div><div class="estimate" id="transport_estimate">UI-observed estimate: —</div></article></div><div class="sub" id="planner_countdown"></div></section>
@@ -50,7 +76,12 @@
 <article class="card"><div class="label">Delivery</div><div class="value" id="delivery">No pending delivery</div><div class="sub" id="lastworker">No confirmed turn yet.</div></article></div></details>
 <article class="card wide"><div class="label">Errors</div><div class="value" id="errors">None reported</div></article>
 <article class="card timeline full"><div class="label">Recent activity</div><div class="timeline-scroll"><div class="timeline-head" aria-hidden="true"><span>Timestamp</span><span>Event</span><span>Direction</span><span>Duration</span><span>Outcome</span></div><ol id="timeline"><li><span>—</span><b>Ready</b><span>Verify connections, then explicitly start automation.</span></li></ol></div></article>
-</section><footer>Loopback-only · configuration only is saved · session state is disposable · no historical replay</footer></main>
+</section></section>
+<section id="page-pairs" class="page"><h2>Pairs</h2><div class="sub">Manage saved pair profiles. Selecting a pair updates the active relay configuration.</div><div class="pair-preview" style="margin-top:12px"><div class="pair-grid"><label>Select pair<select id="page_pair_select"></select></label></div><div class="pair-actions"><button onclick="window.location.hash='overview'">Open full connections</button></div></div></section>
+<section id="page-connections" class="page"><h2>Connections</h2><div class="sub">Planner URL and Worker session configuration.</div></section>
+<section id="page-settings" class="page"><h2>Settings</h2><div class="sub">Runtime: <span id="settings_runtime">—</span></div><div class="sub">Dashboard port: <span id="settings_port">—</span></div><div class="actions" style="margin-top:12px"><button onclick="window.open('/project-dashboard','_blank')">Project Dashboard</button></div></section>
+<section id="page-project" class="page"><h2>Project Dashboard</h2><iframe src="/project-dashboard" style="width:100%;height:80vh;border:1px solid var(--line);border-radius:12px"></iframe></section>
+<footer>Loopback-only · configuration only is saved · session state is disposable · no historical replay</footer></main></div>
 <script>
 let csrf = '';
 let dirty = false;
@@ -404,5 +435,16 @@ for (const [inputId, errorId, key] of [['profile_name','name_error','name'],['pr
   catch (error) { $('errors').textContent = String(error); }
   await refresh();
   setInterval(refresh, 1000);
+})();
+<script>
+(function(){
+  const buttons = document.querySelectorAll('#sidebar button[data-page]');
+  const pages = document.querySelectorAll('.page');
+  function show(page){
+    pages.forEach(p => p.classList.toggle('active', p.id === 'page-' + page));
+    buttons.forEach(b => b.classList.toggle('active', b.dataset.page === page));
+  }
+  buttons.forEach(b => b.addEventListener('click', () => show(b.dataset.page)));
+  show('overview');
 })();
 </script></body></html>
