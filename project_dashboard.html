@@ -279,8 +279,8 @@ async function moveMilestone(id, direction) {
   const itemPriority = item.priority ?? 5;
   const neighborPriority = neighbor.priority ?? 5;
   const newPriority = direction < 0
-    ? (itemPriority <= neighborPriority ? neighborPriority - 1 : itemPriority)
-    : (itemPriority >= neighborPriority ? neighborPriority + 1 : itemPriority);
+    ? (itemPriority > neighborPriority ? neighborPriority - 1 : itemPriority)
+    : (itemPriority < neighborPriority ? neighborPriority + 1 : itemPriority);
   if (newPriority === itemPriority) return;
   try {
     await postRecord({ kind: 'milestone', id: item.id, title: item.title, status: item.status, priority: newPriority, description: item.description });
@@ -299,8 +299,8 @@ async function moveJob(id, direction) {
   const itemPriority = item.priority ?? 5;
   const neighborPriority = neighbor.priority ?? 5;
   const newPriority = direction < 0
-    ? (itemPriority <= neighborPriority ? neighborPriority - 1 : itemPriority)
-    : (itemPriority >= neighborPriority ? neighborPriority + 1 : itemPriority);
+    ? (itemPriority > neighborPriority ? neighborPriority - 1 : itemPriority)
+    : (itemPriority < neighborPriority ? neighborPriority + 1 : itemPriority);
   if (newPriority === itemPriority) return;
   try {
     await postRecord({ kind: 'job', id: item.id, title: item.title, job_kind: item.kind, status: item.status, priority: newPriority, files: item.files || [], intended: item.intended || '', result: item.result || '' });
