@@ -142,6 +142,7 @@ class App:
             self.selected_pair_id = self.pairs[0]["id"]
             self._write_profiles(self.pairs, self.selected_pair_id)
         self.relay = self._make_relay()
+        self.relays = {self.selected_pair_id: self.relay}
 
     def _write_profiles(self, pairs, selected_id):
         selected = next(p for p in pairs if p["id"] == selected_id)
@@ -156,9 +157,18 @@ class App:
             try: os.unlink(temporary)
             except FileNotFoundError: pass
 
-    def _make_relay(self):
-        return RelayRunner(self.runtime, self.settings["planner_url"], self.settings["worker_session"],
+    def _make_relay(self, settings=None):
+        settings = settings or self.settings
+        return RelayRunner(self.runtime, settings["planner_url"], settings["worker_session"],
                            self.adapters, on_event=self._record_event)
+
+    def _relay_for_pair(self, pair_id):
+        if pair_id not in self.relays:
+            profile = next((p for p in self.pairs if p["id"] == pair_id), None)
+            if not profile:
+                raise ValueError("Unknown pair profile")
+            self.relays[pair_id] = self._make_relay(validate_settings(profile))
+        return self.relays[pair_id]
 
     def _record_event(self, row):
         if row.get("level") == "error": self.last_error = row.get("message")
@@ -468,6 +478,20 @@ class App:
             "last_confirmed_turn": relay["last_confirmed_turn"],
             "planner_wait_seconds_remaining": wait_remaining,
         }
+        pairs_status = []
+        for profile in self.pairs:
+            pair_relay = self.relays.get(profile["id"]) if hasattr(self, "relays") else None
+            pair_status = pair_relay.status() if pair_relay else {"status": "stopped", "expected_speaker": "planner", "phase": "stopped", "pending": None, "unresolved": None}
+            pairs_status.append({
+                "id": profile["id"], "name": profile["name"],
+                "planner_url": profile["planner_url"], "worker_session": profile["worker_session"],
+                "selected": profile["id"] == self.selected_pair_id,
+                "status": pair_status.get("status", "stopped"),
+                "phase": pair_status.get("phase", "stopped"),
+                "expected_speaker": pair_status.get("expected_speaker"),
+                "pending": pair_status.get("pending"),
+                "unresolved": pair_status.get("unresolved"),
+            })
         return {"status": relay["status"], "expected_turn": relay["expected_speaker"],
                 "worker_observation": worker_observation,
                 "pending": pending, "phase": phase, "turn": turn,
@@ -482,6 +506,7 @@ class App:
                 # Errors and holds belong only to this process/session.
                 "error": self.last_error,
                 "timeline": relay["activity"], "pairs": self.pairs, "selected_pair_id": self.selected_pair_id,
+                "pairs_status": pairs_status,
                 "settings": self.settings, "now": time.strftime("%Y-%m-%d %H:%M:%S %Z", time.localtime())}
 
     def save(self, data):
@@ -493,12 +518,14 @@ class App:
             self._check_duplicate(candidate, current)
             pairs = [candidate if p is current else p for p in self.pairs]
             self._write_profiles(pairs, self.selected_pair_id)
-            self.pairs = pairs; self.settings = settings; self.relay = self._make_relay()
+            self.pairs = pairs; self.settings = settings
+            self.relay = self._make_relay(settings); self.relays[self.selected_pair_id] = self.relay
             self.last_error = None
             return dict(settings)
 
-    def _ensure_unlocked(self, check_busy=True):
-        state = self.relay.status()
+    def _ensure_unlocked(self, check_busy=True, pair_id=None):
+        relay = self._relay_for_pair(pair_id) if pair_id else self.relay
+        state = relay.status()
         if (check_busy and self.operation_busy) or state["status"] != "stopped" or state.get("pending") or state.get("unresolved"):
             raise ValueError("Stop automation and resolve pending delivery before changing pair profiles")
 
@@ -533,7 +560,7 @@ class App:
         self._write_profiles(pairs, selected)
         self.pairs, self.selected_pair_id = pairs, selected
         self.settings = validate_settings(next(p for p in pairs if p["id"] == selected))
-        self.relay = self._make_relay()
+        self.relay = self._relay_for_pair(selected)
         return {"ok": True, "pair": profile}
 
     def select_pair(self, pair_id):
@@ -542,7 +569,8 @@ class App:
             profile = next((p for p in self.pairs if p["id"] == pair_id), None)
             if not profile: raise ValueError("Unknown pair profile")
             self._write_profiles(self.pairs, pair_id)
-            self.selected_pair_id = pair_id; self.settings = validate_settings(profile); self.relay = self._make_relay()
+            self.selected_pair_id = pair_id; self.settings = validate_settings(profile)
+            self.relay = self._relay_for_pair(pair_id)
             return {"ok": True, "settings": self.settings}
 
 
@@ -561,44 +589,48 @@ class App:
             return {"ok": False, "error": str(exc)}
 
     def mutate(self, action, data=None):
+        data = data or {}
+        pair_id = data.get("pair_id") or self.selected_pair_id
+        target_relay = self._relay_for_pair(pair_id)
+        target_settings = validate_settings(next((p for p in self.pairs if p["id"] == pair_id), self.settings))
         with self.lock:
             if self.operation_busy: raise RuntimeError("Another dashboard operation is already in progress")
             self.operation_busy = True
         try:
             if action == "verify":
-                result = self.verify(data)
+                result = self.verify(data if data.get("planner_url") else target_settings)
                 if not result.get("ok"):
                     raise ValueError(result.get("error") or "Connection verification failed")
                 return result
             if action == "refresh":
-                relay_status = self.relay.status()
+                relay_status = target_relay.status()
                 if relay_status["status"] != "stopped":
                     raise RuntimeError("Stop automation before refreshing Planner or clearing session state")
                 cleared = bool(relay_status.get("pending") or relay_status.get("unresolved"))
                 # This explicit operator action abandons the disposable run,
                 # including ambiguous holds; Start will establish fresh
                 # baselines and verify both destinations before execution.
-                self.relay.state = _empty_state(self.settings["planner_url"], self.settings["worker_session"])
+                target_relay.state = _empty_state(target_settings["planner_url"], target_settings["worker_session"])
                 self.last_error = None
                 try:
-                    self.adapters.refresh_planner(self.settings["planner_url"])
+                    self.adapters.refresh_planner(target_settings["planner_url"])
                 except Exception as exc:
                     self.last_error = str(exc)
-                    self.relay._event("refresh", f"Session state cleared; Planner refresh failed: {exc}", "error")
+                    target_relay._event("refresh", f"Session state cleared; Planner refresh failed: {exc}", "error")
                     raise
-                self.relay._event("refresh", "Planner page refreshed; pending and unresolved session state cleared")
+                target_relay._event("refresh", "Planner page refreshed; pending and unresolved session state cleared")
                 return {"ok": True, "status": "stopped", "planner_refreshed": True,
                         "session_state_cleared": True, "previous_hold_cleared": cleared}
             if action == "start":
                 # A new run discards prior diagnostics and turn state before
                 # verification, including a verification failure.
-                self.relay.state = _empty_state(self.settings["planner_url"], self.settings["worker_session"])
+                target_relay.state = _empty_state(target_settings["planner_url"], target_settings["worker_session"])
                 self.last_error = None
-                self.relay.start()
+                target_relay.start()
                 self.last_error = None
-                return {"ok": True, "status": "running", "warning": "Live ChatGPT/OpenCode messaging is enabled"}
+                return {"ok": True, "status": "running", "pair_id": pair_id, "warning": "Live ChatGPT/OpenCode messaging is enabled"}
             if action == "stop":
-                result = self.relay.stop()
+                result = target_relay.stop()
                 if not result["ok"]: self.last_error = result.get("warning")
                 return result
             raise ValueError("Unsupported operation")

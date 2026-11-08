@@ -197,8 +197,15 @@ class RelayRunnerTests(unittest.TestCase):
         one = self.make(first_adapters, "ses_original")
         one.start()
         two = self.make(FakeAdapters(), "ses_replacement")
+        # Multiple distinct pairs may run concurrently (per-pair locks).
+        two.start()
+        self.assertTrue(one.stop()["ok"])
+        self.assertTrue(two.stop()["ok"])
+        # Same pair cannot run twice concurrently.
+        one.start()
+        duplicate = self.make(FakeAdapters(), "ses_original")
         with self.assertRaisesRegex(RuntimeError, "already owns"):
-            two.start()
+            duplicate.start()
         first_adapters.ambiguous_worker = True
         first_adapters.planner = {"id": "planner-risk", "text": "hold me", "role": "assistant", "completed": True}
         self.assertTrue(self.wait_for(lambda: one.status()["unresolved"] is not None))

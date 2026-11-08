@@ -304,7 +304,9 @@ class RelayRunner:
             # Clear every piece of prior session presentation/state before any
             # new observations. Nothing from the preceding run is resumable.
             self.state = _empty_state(self.planner_url, self.worker_session)
-            lock_path = self.runtime / "automation.lock"
+            # Per-pair lock so multiple pairs can run concurrently.
+            lock_key = hashlib.sha256(f"{self.planner_url}\0{self.worker_session}".encode()).hexdigest()[:16]
+            lock_path = self.runtime / f"automation.{lock_key}.lock"
             lock_path.parent.mkdir(parents=True, exist_ok=True, mode=0o700)
             self._lock_fd = os.open(lock_path, os.O_CREAT | os.O_RDWR, 0o600)
             try:
