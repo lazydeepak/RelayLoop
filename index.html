@@ -195,8 +195,10 @@ function render(data) {
   $('errors').className = 'value ' + (data.error ? 'error' : '');
   const locked = active || !!data.pending || !!data.unresolved;
   const anyRunning = (data.pairs_status || []).some((p) => p.status === 'running');
+  $('start').hidden = !anyRunning;
   $('start').disabled = !anyRunning || pairBusy;
   $('refresh_run').disabled = active || pairBusy;
+  $('stop').hidden = !anyRunning;
   $('stop').disabled = !anyRunning || pairBusy;
   if ($('save')) $('save').disabled = locked || pairBusy;
   if ($('verify')) $('verify').disabled = locked || pairDraft || pairBusy;
