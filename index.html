@@ -261,13 +261,15 @@ function renderProfiles() {
   if (pairDraft) $('profile_id').textContent = idValue;
   $('profile_id').title = idValue;
   $('profile_id').setAttribute('aria-label', `Pair ID: ${idValue}`);
-  $('save_pair').hidden = pairDraft;
+  $('save_pair').textContent = pairDraft ? 'Save new pair' : 'Save Pair';
+  $('save_pair').hidden = false;
+  $('add_pair').hidden = pairDraft;
   $('cancel_pair').hidden = !pairDraft;
   $('discard_pair').hidden = !pairEditing || pairDraft;
   for (const id of ['profile_name','profile_planner','profile_worker']) $(id).disabled = !previewSeeded || !!currentLockReason || pairBusy;
   select.disabled = pairDraft || !previewSeeded || !!currentLockReason || dirty || pairEditing || pairBusy;
   $('add_pair').disabled = !previewSeeded || !!currentLockReason || pairBusy;
-  $('save_pair').disabled = !previewSeeded || pairDraft || !!currentLockReason || pairBusy;
+  $('save_pair').disabled = !previewSeeded || !!currentLockReason || pairBusy;
   $('cancel_pair').disabled = !previewSeeded || pairBusy || !!currentLockReason;
   $('discard_pair').disabled = !previewSeeded || pairBusy || !!currentLockReason;
   if (!previewSeeded) $('pair_note').textContent = 'Loading current pair from status…';
@@ -459,7 +461,7 @@ $('pair_note').textContent = 'Loading current pair from status…';
 $('profile_select').addEventListener('change', async () => { const id = $('profile_select').value; if (dirty || currentLockReason) return; const result = await post('/api/pairs/select', {id}); if (result) { pairDraft = false; selectedProfileId=id; } });
 $('add_pair').onclick = () => {
   if (pairDraft) { commitProfile(); return; }
-  pairDraft = true; pairEditing = true; dirty = false; renderProfiles(); $('pair_note').textContent = 'New pair draft — Add Pair again to save.'; $('profile_name').focus();
+  pairDraft = true; pairEditing = true; dirty = false; renderProfiles(); $('pair_note').textContent = 'New pair draft — fill the form and click Save new pair.'; $('profile_name').focus();
 };
 $('save_pair').onclick = commitProfile;
 $('cancel_pair').onclick = () => { pairDraft = false; pairEditing = false; dirty = false; renderProfiles(); };
