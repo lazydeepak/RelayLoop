@@ -425,19 +425,27 @@ class App:
     def status(self):
         relay = self.relay.status()
         worker_observation = {"state": "unknown", "busy": None, "latest_completed_id": None}
-        try:
-            observed_worker = self.adapters.worker_state(self.settings["worker_session"])
-            busy = bool(observed_worker.get("busy"))
-            latest = observed_worker.get("latest_completed") or observed_worker.get("latest")
-            worker_observation = {
-                "state": "busy" if busy else "idle",
-                "busy": busy,
-                "latest_completed_id": latest.get("id") if isinstance(latest, dict) else None,
-            }
-        except Exception:
-            # Status rendering must remain available when OpenCode cannot be
-            # queried; the UI can distinguish unavailable from observed idle.
-            pass
+        # Dashboard-only cache: live turns need fresh worker_state, but the
+        # status page polls every second and shouldn't re-export each time.
+        now_mono = time.monotonic()
+        cached_obs = getattr(self, "_status_worker_cache", None)
+        use_cache = isinstance(self.adapters, LiveAdapters) and cached_obs and now_mono - cached_obs[0] < 5.0
+        if use_cache:
+            worker_observation = cached_obs[1]
+        else:
+            try:
+                observed_worker = self.adapters.worker_state(self.settings["worker_session"])
+                busy = bool(observed_worker.get("busy"))
+                latest = observed_worker.get("latest_completed") or observed_worker.get("latest")
+                worker_observation = {
+                    "state": "busy" if busy else "idle",
+                    "busy": busy,
+                    "latest_completed_id": latest.get("id") if isinstance(latest, dict) else None,
+                }
+                if isinstance(self.adapters, LiveAdapters):
+                    self._status_worker_cache = (now_mono, worker_observation)
+            except Exception:
+                pass
         pending = relay["pending"]
         unresolved = relay["unresolved"]
         phase = "unresolved" if unresolved else (relay.get("phase") or "stopped")

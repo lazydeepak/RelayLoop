@@ -151,21 +151,12 @@ class LiveAdapters:
         return text or ""
 
     def worker_state(self, session):
-        # Cache briefly so /api/status polls don't re-export on every second.
-        cache = getattr(self, "_worker_state_cache", None)
-        if cache is None:
-            cache = self._worker_state_cache = {}
-        cached = cache.get(session)
-        if cached and time.monotonic() - cached[0] < 5.0:
-            return cached[1]
         payload = self._worker_session_info(session)
         messages = self._worker_messages(session, (payload.get("time") or {}).get("updated"))
         timing = payload.get("time") or {}
         busy = bool(timing.get("busy") and timing.get("busy", 0) > timing.get("idle", 0))
         latest = self._completed_worker_message(messages)
-        result = {"busy": busy, "latest": None if busy else latest, "latest_completed": latest}
-        cache[session] = (time.monotonic(), result)
-        return result
+        return {"busy": busy, "latest": None if busy else latest, "latest_completed": latest}
 
     def _completed_worker_message(self, messages):
         if not messages: return None
