@@ -53,7 +53,9 @@
 .sidebar.is-collapsed{width:64px}
 .sidebar.is-collapsed .nav-label,.sidebar.is-collapsed .section-label,.sidebar.is-collapsed .brand-copy{display:none}
 .sidebar.is-collapsed button{justify-content:center;padding:9px}
-.main-area{min-width:0;padding:20px;overflow:auto}
+.main-area{min-width:0;width:100%;max-width:100%;padding:20px;overflow:auto}
+.page{display:none;width:100%;max-width:100%}
+.page.active{display:block}
 .page{display:none}
 .page.active{display:block}
 @media(max-width:900px){.app-shell{grid-template-columns:1fr}.sidebar{display:none}}
