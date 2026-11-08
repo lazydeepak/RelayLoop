@@ -42,6 +42,14 @@ button{background:#172737;border:1px solid var(--line);color:var(--text);padding
 button:hover{border-color:var(--cyan);color:var(--cyan)}
 @media(max-width:900px){.grid{grid-template-columns:repeat(2,1fr)}.chart-wrap{grid-template-columns:1fr}}
 @media(max-width:560px){.grid{grid-template-columns:1fr}.bar-row{grid-template-columns:1fr}main{padding:16px}}
+.modal{position:fixed;inset:0;background:#000000aa;display:none;align-items:center;justify-content:center;padding:20px;z-index:1000}
+.modal.open{display:flex}
+.modal-panel{width:min(760px,100%);max-height:90vh;overflow:auto;background:linear-gradient(180deg,#122331,#0d1a26);border:1px solid var(--line);border-radius:16px;padding:20px;box-shadow:0 20px 60px #00000066}
+.modal-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px}
+.modal-head h2{margin:0}
+.close-btn{background:transparent;border:1px solid var(--line);color:var(--muted)}
+.close-btn:hover{color:var(--red);border-color:var(--red)}
+.modal .form{margin-top:8px}
 </style>
 </head>
 <body>
@@ -150,33 +158,14 @@ button:hover{border-color:var(--cyan);color:var(--cyan)}
 </section>
 
 <section class="section card">
-<h2>Manage milestones</h2>
-<div class="form" style="grid-template-columns:repeat(4,minmax(0,1fr))">
-<label>ID<input id="m_id" placeholder="auto"></label>
-<label>Title<input id="m_title"></label>
-<label>Status<select id="m_status"><option>pending</option><option>in_progress</option><option>done</option><option>corrected</option></select></label>
-<label>Priority<input id="m_priority" type="number" value="5"></label>
-</div>
-<label>Description<textarea id="m_desc" style="width:100%;min-height:60px;background:#09121c;color:var(--text);border:1px solid var(--line);border-radius:8px;padding:8px"></textarea></label>
-<div class="actions" style="margin-top:10px"><button onclick="saveMilestone()">Save milestone</button></div>
+<div class="modal-head"><h2>Manage milestones</h2><button onclick="openMilestoneModal()">Add / edit milestone</button></div>
+<div class="sub">Click a milestone row to edit it in a popup. Lower priority number means higher priority.</div>
 <div class="sub" id="m_msg"></div>
 </section>
 
 <section class="section card">
-<h2>Manage jobs</h2>
-<div class="form" style="grid-template-columns:repeat(4,minmax(0,1fr))">
-<label>ID<input id="j_id" placeholder="auto"></label>
-<label>Title<input id="j_title"></label>
-<label>Kind<input id="j_kind" value="edit"></label>
-<label>Status<select id="j_status"><option>pending</option><option>in_progress</option><option>done</option><option>failed</option><option>corrected</option></select></label>
-</div>
-<div class="form" style="grid-template-columns:repeat(3,minmax(0,1fr))">
-<label>Priority<input id="j_priority" type="number" value="5"></label>
-<label>Files (comma)<input id="j_files"></label>
-<label>Intended<input id="j_intended"></label>
-</div>
-<label>Result<textarea id="j_result" style="width:100%;min-height:60px;background:#09121c;color:var(--text);border:1px solid var(--line);border-radius:8px;padding:8px"></textarea></label>
-<div class="actions" style="margin-top:10px"><button onclick="saveJob()">Save job</button></div>
+<div class="modal-head"><h2>Manage jobs</h2><button onclick="openJobModal()">Add / edit job</button></div>
+<div class="sub">Click a job row to edit it in a popup.</div>
 <div class="sub" id="j_msg"></div>
 </section>
 
@@ -196,6 +185,41 @@ button:hover{border-color:var(--cyan);color:var(--cyan)}
 <div class="timeline" id="timeline"></div>
 </section>
 </main>
+
+<div id="milestoneModal" class="modal">
+<div class="modal-panel">
+<div class="modal-head"><h2>Milestone editor</h2><button class="close-btn" onclick="closeMilestoneModal()">Close</button></div>
+<div class="form" style="grid-template-columns:repeat(4,minmax(0,1fr))">
+<label>ID<input id="m_id" placeholder="auto"></label>
+<label>Title<input id="m_title"></label>
+<label>Status<select id="m_status"><option>pending</option><option>in_progress</option><option>done</option><option>corrected</option></select></label>
+<label>Priority<input id="m_priority" type="number" value="5"></label>
+</div>
+<label>Description<textarea id="m_desc" style="width:100%;min-height:80px;background:#09121c;color:var(--text);border:1px solid var(--line);border-radius:8px;padding:8px"></textarea></label>
+<div class="actions" style="margin-top:12px"><button onclick="saveMilestone()">Save milestone</button></div>
+<div class="sub" id="m_modal_msg"></div>
+</div>
+</div>
+
+<div id="jobModal" class="modal">
+<div class="modal-panel">
+<div class="modal-head"><h2>Job editor</h2><button class="close-btn" onclick="closeJobModal()">Close</button></div>
+<div class="form" style="grid-template-columns:repeat(4,minmax(0,1fr))">
+<label>ID<input id="j_id" placeholder="auto"></label>
+<label>Title<input id="j_title"></label>
+<label>Kind<input id="j_kind" value="edit"></label>
+<label>Status<select id="j_status"><option>pending</option><option>in_progress</option><option>done</option><option>failed</option><option>corrected</option></select></label>
+</div>
+<div class="form" style="grid-template-columns:repeat(3,minmax(0,1fr))">
+<label>Priority<input id="j_priority" type="number" value="5"></label>
+<label>Files (comma)<input id="j_files"></label>
+<label>Intended<input id="j_intended"></label>
+</div>
+<label>Result<textarea id="j_result" style="width:100%;min-height:80px;background:#09121c;color:var(--text);border:1px solid var(--line);border-radius:8px;padding:8px"></textarea></label>
+<div class="actions" style="margin-top:12px"><button onclick="saveJob()">Save job</button></div>
+<div class="sub" id="j_modal_msg"></div>
+</div>
+</div>
 
 <script>
 const $ = (id) => document.getElementById(id);
@@ -220,6 +244,29 @@ async function postRecord(payload) {
   return data;
 }
 function val(id) { const el = $(id); return el ? el.value.trim() : ''; }
+function openMilestoneModal(data) {
+  $('m_id').value = data?.id || '';
+  $('m_title').value = data?.title || '';
+  $('m_status').value = data?.status || 'pending';
+  $('m_priority').value = data?.priority ?? 5;
+  $('m_desc').value = data?.description || '';
+  $('m_modal_msg').textContent = '';
+  $('milestoneModal').classList.add('open');
+}
+function closeMilestoneModal() { $('milestoneModal').classList.remove('open'); }
+function openJobModal(data) {
+  $('j_id').value = data?.id || '';
+  $('j_title').value = data?.title || '';
+  $('j_kind').value = data?.kind || 'edit';
+  $('j_status').value = data?.status || 'pending';
+  $('j_priority').value = data?.priority ?? 5;
+  $('j_files').value = (data?.files || []).join(', ');
+  $('j_intended').value = data?.intended || '';
+  $('j_result').value = data?.result || '';
+  $('j_modal_msg').textContent = '';
+  $('jobModal').classList.add('open');
+}
+function closeJobModal() { $('jobModal').classList.remove('open'); }
 async function saveMilestone() {
   try {
     await postRecord({
@@ -230,10 +277,10 @@ async function saveMilestone() {
       priority: parseInt(val('m_priority') || '5', 10),
       description: val('m_desc')
     });
-    $('m_msg').textContent = 'Milestone saved.';
+    $('m_modal_msg').textContent = 'Milestone saved.';
     refresh();
   } catch (error) {
-    $('m_msg').textContent = error.message;
+    $('m_modal_msg').textContent = error.message;
   }
 }
 async function saveCorrection() {
@@ -263,10 +310,10 @@ async function saveJob() {
       intended: val('j_intended'),
       result: val('j_result')
     });
-    $('j_msg').textContent = 'Job saved.';
+    $('j_modal_msg').textContent = 'Job saved.';
     refresh();
   } catch (error) {
-    $('j_msg').textContent = error.message;
+    $('j_modal_msg').textContent = error.message;
   }
 }
 function badge(status){ return `<span class="badge ${status}">${status.replace('_',' ')}</span>`; }
@@ -335,28 +382,17 @@ document.addEventListener('click', (event) => {
   const milestoneRow = event.target.closest('#milestoneTable tr[data-id]');
   if (milestoneRow) {
     const m = milestoneMap[milestoneRow.dataset.id];
-    if (m) {
-      $('m_id').value = m.id || '';
-      $('m_title').value = m.title || '';
-      $('m_status').value = m.status || 'pending';
-      $('m_priority').value = m.priority ?? 5;
-      $('m_desc').value = m.description || '';
-    }
+    if (m) openMilestoneModal(m);
   }
   const jobRow = event.target.closest('#jobTable tr[data-id]');
   if (jobRow) {
     const j = jobMap[jobRow.dataset.id];
-    if (j) {
-      $('j_id').value = j.id || '';
-      $('j_title').value = j.title || '';
-      $('j_kind').value = j.kind || 'edit';
-      $('j_status').value = j.status || 'pending';
-      $('j_priority').value = j.priority ?? 5;
-      $('j_files').value = (j.files || []).join(', ');
-      $('j_intended').value = j.intended || '';
-      $('j_result').value = j.result || '';
-    }
+    if (j) openJobModal(j);
   }
+});
+['milestoneModal','jobModal'].forEach((id) => {
+  const modal = $(id);
+  if (modal) modal.addEventListener('click', (event) => { if (event.target === modal) modal.classList.remove('open'); });
 });
 refresh();
 setInterval(refresh,5000);
