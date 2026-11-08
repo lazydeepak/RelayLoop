@@ -16,11 +16,11 @@
 <header class="top"><button class="hamburger-btn" id="hamburgerBtn" type="button" aria-label="Open navigation">☰</button><div><div class="eyebrow">RelayLoop · independent conversation relay</div><h1>Planner ↔ Worker</h1><div class="clock" id="clock">Local time</div></div><div class="actions"><button id="refresh_run" type="button" title="Refresh Planner and clear held session state">Refresh</button><button id="start">Start Automation</button><button id="stop" disabled>Graceful Stop</button><button id="project_dashboard" type="button" onclick="window.open('/project-dashboard','_blank')" title="Open the RelayLoop project progress dashboard">Project Dashboard</button></div></header>
 <section id="page-overview" class="page active">
 <section class="layout">
-<article class="card full"><div class="label">Connections · one active pair</div><section class="pair-preview" aria-label="Pair profiles"><div class="pair-head"><div class="pair-title">Pair profiles</div></div><div class="sub">Saved locally · selected pair is used by Verify and Start.</div><div class="pair-grid"><label>Select pair<select id="profile_select" aria-label="Select pair"></select></label><label>Pair name<input id="profile_name" autocomplete="off"><span class="pair-errors" id="name_error" aria-live="polite"></span></label><label>Pair ID<span class="pair-id-value" role="textbox" aria-readonly="true" aria-label="Pair ID"><span class="pair-id-placeholder" id="profile_id">Waiting for status…</span><span class="readonly-tag" aria-hidden="true">READ-ONLY</span></span></label><label>Planner URL<input id="profile_planner" autocomplete="off"><span class="pair-errors" id="planner_error" aria-live="polite"></span></label><label>Worker session ID<input id="profile_worker" autocomplete="off"><span class="pair-errors" id="worker_error" aria-live="polite"></span></label></div><div class="pair-actions"><button class="future" id="add_pair" type="button">Add Pair</button><button class="future" id="save_pair" type="button">Save Pair</button><button id="cancel_pair" type="button" hidden>Cancel draft</button><button id="discard_pair" type="button" hidden>Discard edits</button><span class="pair-note" id="pair_note">Saved locally · selected pair is used by Verify and Start.</span></div></section><div class="runtime-heading">Current runtime connection · used by Save Connections, Verify, and automation</div><div class="form"><label>Planner URL<input id="planner_url" autocomplete="off"></label><label>Worker session ID<input id="worker_session" autocomplete="off"></label></div><div class="form-actions"><button id="save">Save Connections</button><button id="verify">Verify Connections</button></div><div class="sub" id="message">Verify checks both destinations without starting the relay. Start continues an active turn from either side; when both are idle, Planner goes first.</div></article>
+<article class="card full"><div class="label">Current runtime connection</div><div class="sub">Used by Save Connections, Verify, and automation. Manage saved pairs on the Pairs page.</div><div class="form-actions"><button type="button" onclick="document.querySelector('#sidebar button[data-page=pairs]').click()">Manage pairs</button></div><div class="runtime-heading">Runtime connection</div><div class="form"><label>Planner URL<input id="planner_url" autocomplete="off"></label><label>Worker session ID<input id="worker_session" autocomplete="off"></label></div><div class="form-actions"><button id="save">Save Connections</button><button id="verify">Verify Connections</button></div><div class="sub" id="message">Verify checks both destinations without starting the relay. Start continues an active turn from either side; when both are idle, Planner goes first.</div></article>
 <section class="card live" aria-labelledby="live-title"><div class="live-head"><h2 id="live-title">Live Run</h2><span class="label">Observed status</span></div><div class="track" role="group" aria-label="Planner to Worker to Planner handoff track"><span class="node" id="planner_node">Planner<span class="expected-tag" id="planner_expected" hidden>Expected</span></span><div class="track-segment"><span class="arrow" id="arrow_out" aria-hidden="true">→</span><span class="track-badge" id="out_badge">Idle</span></div><span class="node" id="worker_node">Worker<span class="expected-tag" id="worker_expected" hidden>Expected</span></span><div class="track-segment"><span class="arrow" id="arrow_back" aria-hidden="true">→</span><span class="track-badge" id="back_badge">Idle</span></div><span class="node" id="planner_return">Planner</span></div><div class="track-note" id="handoff_note" role="status">Transport idle; no confirmed handoff observed.</div><div class="live-grid"><article class="live-state"><div class="label">Planner</div><div class="value" id="planner_state">Unknown</div><div class="sub" id="planner_detail">Planner state is not exposed.</div><div class="estimate" id="planner_estimate">UI-observed estimate: —</div></article><article class="live-state"><div class="label">Worker</div><div class="value" id="worker_state">Unknown</div><div class="sub" id="worker_detail">Worker readiness is not exposed.</div><div class="estimate" id="worker_estimate">UI-observed estimate: —</div></article><article class="live-state"><div class="label">Extraction</div><div class="value" id="extract_state">Idle</div><div class="estimate" id="extract_estimate">UI-observed estimate: —</div></article><article class="live-state"><div class="label">Transport</div><div class="value" id="transport_state">Idle</div><div class="estimate" id="transport_estimate">UI-observed estimate: —</div></article><article class="live-state"><div class="label">Automation</div><div class="value state" id="status">Stopped</div><div class="sub" id="health">Automation does not start automatically.</div><div class="sub" id="runtime">Elapsed: —</div></article><article class="live-state"><div class="label">Relay phase</div><div class="value" id="turn">Planner</div><div class="sub" id="turnsub">Waiting for a fresh completed assistant message.</div></article><article class="live-state"><div class="label">Extraction detail</div><div class="value" id="extraction">Idle</div><div class="sub" id="lastplanner">No message consumed yet.</div></article><article class="live-state"><div class="label">Delivery</div><div class="value" id="delivery">No pending delivery</div><div class="sub" id="lastworker">No confirmed turn yet.</div></article><article class="live-state"><div class="label">Errors</div><div class="value" id="errors">None reported</div></article></div><div class="sub" id="planner_countdown"></div></section>
 <article class="card timeline full"><div class="label">Recent activity</div><div class="timeline-scroll"><div class="timeline-head" aria-hidden="true"><span>Timestamp</span><span>Event</span><span>Direction</span><span>Duration</span><span>Outcome</span></div><ol id="timeline"><li><span>—</span><b>Ready</b><span>Verify connections, then explicitly start automation.</span></li></ol></div></article>
 </section></section>
-<section id="page-pairs" class="page"><h2>Pairs</h2><div class="sub">Manage saved pair profiles. Selecting a pair updates the active relay configuration.</div><div class="pair-preview mt-12"><div class="pair-grid"><label>Select pair<select id="page_pair_select"></select></label></div><div class="pair-actions"><button onclick="window.location.hash='overview'">Open full connections</button></div></div></section>
+<section id="page-pairs" class="page"><h2>Pairs</h2><div class="sub">Saved pairs list. Selecting a pair updates the active relay configuration.</div><div id="pairs_list" class="pairs-list mt-12"></div><section class="pair-preview mt-12" aria-label="Pair profiles"><div class="pair-head"><div class="pair-title">Create / edit pair</div></div><div class="sub">Add a new pair or edit the selected pair.</div><div class="pair-grid"><label>Select pair<select id="profile_select" aria-label="Select pair"></select></label><label>Pair name<input id="profile_name" autocomplete="off"><span class="pair-errors" id="name_error" aria-live="polite"></span></label><label>Pair ID<span class="pair-id-value" role="textbox" aria-readonly="true" aria-label="Pair ID"><span class="pair-id-placeholder" id="profile_id">Waiting for status…</span><span class="readonly-tag" aria-hidden="true">READ-ONLY</span></span></label><label>Planner URL<input id="profile_planner" autocomplete="off"><span class="pair-errors" id="planner_error" aria-live="polite"></span></label><label>Worker session ID<input id="profile_worker" autocomplete="off"><span class="pair-errors" id="worker_error" aria-live="polite"></span></label></div><div class="pair-actions"><button class="future" id="add_pair" type="button">Add Pair</button><button class="future" id="save_pair" type="button">Save Pair</button><button id="cancel_pair" type="button" hidden>Cancel draft</button><button id="discard_pair" type="button" hidden>Discard edits</button><span class="pair-note" id="pair_note">Saved locally · selected pair is used by Verify and Start.</span></div></section></section>
 <section id="page-connections" class="page"><h2>Connections</h2><div class="sub">Planner URL and Worker session configuration.</div></section>
 <section id="page-settings" class="page"><h2>Settings</h2><div class="sub">Runtime: <span id="settings_runtime">—</span></div><div class="sub">Dashboard port: <span id="settings_port">—</span></div><div class="form form-narrow"><label>Color profile<select id="theme_select"><option value="system">System</option><option value="dark">Dark</option><option value="light">Light</option></select></label></div><div class="actions mt-12"><button onclick="window.open('/project-dashboard','_blank')">Project Dashboard</button></div></section>
 <section id="page-project" class="page"><h2>Project Dashboard</h2><iframe src="/project-dashboard" class="project-frame"></iframe></section>
@@ -271,6 +271,58 @@ function renderProfiles() {
   $('discard_pair').disabled = !previewSeeded || pairBusy || !!currentLockReason;
   if (!previewSeeded) $('pair_note').textContent = 'Loading current pair from status…';
   else $('pair_note').textContent = currentLockReason || 'Profiles are saved locally and used by automation.';
+  renderPairsList();
+}
+function renderPairsList() {
+  const list = $('pairs_list');
+  if (!list) return;
+  list.replaceChildren();
+  const statusBadge = () => {
+    const last = (previewProfiles.find((item) => item.id === selectedProfileId) || {});
+    return currentLockReason ? 'Locked' : 'Stopped';
+  };
+  for (const profile of previewProfiles) {
+    const selected = profile.id === selectedProfileId;
+    const card = document.createElement('article');
+    card.className = 'pair-card' + (selected ? ' selected' : '');
+    const head = document.createElement('div');
+    head.className = 'pair-card-head';
+    const name = document.createElement('span');
+    name.className = 'pair-card-name';
+    name.textContent = profile.name || '(unnamed pair)';
+    const badge = document.createElement('span');
+    badge.className = 'pair-card-badge' + (selected ? ' selected' : '');
+    badge.textContent = selected ? 'Selected' : statusBadge();
+    head.append(name, badge);
+    const meta = document.createElement('div');
+    meta.className = 'pair-card-meta';
+    meta.textContent = `ID: ${profile.id} · Planner: ${profile.planner} · Worker: ${profile.worker}`;
+    const actions = document.createElement('div');
+    actions.className = 'pair-card-actions';
+    const selectBtn = document.createElement('button');
+    selectBtn.type = 'button';
+    selectBtn.textContent = selected ? 'Selected' : 'Select';
+    selectBtn.disabled = selected || !previewSeeded || !!currentLockReason || pairBusy;
+    selectBtn.onclick = async () => { if (dirty || currentLockReason) return; const result = await post('/api/pairs/select', {id: profile.id}); if (result) { pairDraft = false; selectedProfileId = profile.id; await refresh(); } };
+    const editBtn = document.createElement('button');
+    editBtn.type = 'button';
+    editBtn.textContent = 'Edit';
+    editBtn.disabled = !previewSeeded || !!currentLockReason || pairBusy;
+    editBtn.onclick = async () => {
+      if (profile.id !== selectedProfileId) { if (dirty || currentLockReason) return; const result = await post('/api/pairs/select', {id: profile.id}); if (!result) return; selectedProfileId = profile.id; }
+      pairEditing = true; dirty = false; renderProfiles();
+      $('profile_name').focus();
+    };
+    actions.append(selectBtn, editBtn);
+    card.append(head, meta, actions);
+    list.append(card);
+  }
+  if (!previewProfiles.length) {
+    const empty = document.createElement('div');
+    empty.className = 'sub';
+    empty.textContent = 'No saved pairs yet — add a pair below.';
+    list.append(empty);
+  }
 }
 function clearPairErrors() {
   for (const [inputId, errorId] of [['profile_name','name_error'],['profile_planner','planner_error'],['profile_worker','worker_error']]) {
