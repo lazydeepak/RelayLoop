@@ -119,6 +119,8 @@ class App:
         self.adapters = adapters or LiveAdapters(self.adapter_dir, runner=self._proc_runner)
         self.pairs = []
         self.selected_pair_id = None
+        self.project_progress_path = self.runtime / "project_progress.json"
+        self.project_progress = self._load_project_progress()
         try:
             saved = json.loads(self.settings_path.read_text(encoding="utf8"))
             if isinstance(saved, dict):
@@ -160,6 +162,223 @@ class App:
 
     def _record_event(self, row):
         if row.get("level") == "error": self.last_error = row.get("message")
+
+    def _now_iso(self):
+        return time.strftime("%Y-%m-%dT%H:%M:%S%z", time.localtime())
+
+    def _default_project_progress(self):
+        now = self._now_iso()
+        return {
+            "project": "RelayLoop",
+            "created_at": now,
+            "updated_at": now,
+            "milestones": [
+                {"id": "m1", "title": "Initial RelayLoop import", "status": "done",
+                 "description": "Standalone one-pair relay imported and adapted.", "created_at": now, "updated_at": now},
+                {"id": "m2", "title": "Resolve dashboard port conflict", "status": "done",
+                 "description": "Default port changed from 5555 to 5566 to avoid TerminalBot.", "created_at": now, "updated_at": now},
+                {"id": "m3", "title": "Multi-pair upgrade preparation", "status": "done",
+                 "description": "Architecture and preparation analysis documented.", "created_at": now, "updated_at": now},
+                {"id": "m4", "title": "Project progress dashboard", "status": "in_progress",
+                 "description": "Documentation and live progress dashboard implementation.", "created_at": now, "updated_at": now},
+                {"id": "m5", "title": "Multi-pair concurrent support", "status": "pending",
+                 "description": "Runner registry, per-pair locks, aggregate status, and UI.", "created_at": now, "updated_at": now},
+                {"id": "m6", "title": "Validation and test hardening", "status": "pending",
+                 "description": "Concurrent-runner and cross-pair isolation tests.", "created_at": now, "updated_at": now},
+            ],
+            "jobs": [
+                {"id": "j1", "title": "Change default port to 5566", "kind": "correction",
+                 "files": ["relayloop_dashboard.py", "test_dashboard.py", "README.md"],
+                 "intended": "Avoid TerminalBot port conflict on 5555.",
+                 "status": "done", "timestamp": now, "result": "49 tests passed; dashboard served on 5566.",
+                 "correction_of": None},
+                {"id": "j2", "title": "Analyze multi-pair upgrade", "kind": "analysis",
+                 "files": [], "intended": "Identify preparation for concurrent pairs.",
+                 "status": "done", "timestamp": now, "result": "Preparation checklist produced.", "correction_of": None},
+                {"id": "j3", "title": "Implement project progress dashboard", "kind": "upgrade",
+                 "files": ["relayloop_dashboard.py", "index.html", "project_dashboard.html", "docs/PROJECT_PROGRESS.md"],
+                 "intended": "Track milestones, edits, tests, and corrections with timestamps.",
+                 "status": "in_progress", "timestamp": now, "result": "In progress.", "correction_of": None},
+            ],
+            "file_changes": [],
+            "tests": [
+                {"name": "python3 -m unittest discover", "status": "pass", "timestamp": now,
+                 "details": "49 tests OK after port change."},
+            ],
+            "corrections": [],
+            "events": [
+                {"id": "e1", "kind": "milestone", "title": "Project progress tracking initialized", "timestamp": now,
+                 "details": "Seeded milestones, jobs, and validation state."}
+            ],
+        }
+
+    def _load_project_progress(self):
+        try:
+            data = json.loads(self.project_progress_path.read_text(encoding="utf8"))
+            if isinstance(data, dict):
+                data.setdefault("milestones", [])
+                data.setdefault("jobs", [])
+                data.setdefault("file_changes", [])
+                data.setdefault("tests", [])
+                data.setdefault("corrections", [])
+                data.setdefault("events", [])
+                return data
+        except FileNotFoundError:
+            pass
+        except (ValueError, TypeError, OSError):
+            self.last_error = "Saved project progress is invalid; reseeding"
+        data = self._default_project_progress()
+        self._save_project_progress(data)
+        return data
+
+    def _save_project_progress(self, data=None):
+        data = data or self.project_progress
+        data["updated_at"] = self._now_iso()
+        fd, temporary = tempfile.mkstemp(prefix=".project-progress-", dir=self.runtime)
+        try:
+            with os.fdopen(fd, "w", encoding="utf8") as stream:
+                json.dump(data, stream, indent=2)
+                stream.write("\n")
+                stream.flush()
+                os.fsync(stream.fileno())
+            os.chmod(temporary, 0o600)
+            os.replace(temporary, self.project_progress_path)
+        finally:
+            try: os.unlink(temporary)
+            except FileNotFoundError: pass
+
+    def project_status(self):
+        with self.lock:
+            data = json.loads(json.dumps(self.project_progress))
+            milestones = data.get("milestones", [])
+            jobs = data.get("jobs", [])
+            tests = data.get("tests", [])
+            changes = data.get("file_changes", [])
+            summary = {
+                "milestones": {
+                    "total": len(milestones),
+                    "done": sum(1 for m in milestones if m.get("status") == "done"),
+                    "in_progress": sum(1 for m in milestones if m.get("status") == "in_progress"),
+                    "pending": sum(1 for m in milestones if m.get("status") == "pending"),
+                    "corrected": sum(1 for m in milestones if m.get("status") == "corrected"),
+                },
+                "jobs": {
+                    "total": len(jobs),
+                    "done": sum(1 for j in jobs if j.get("status") == "done"),
+                    "in_progress": sum(1 for j in jobs if j.get("status") == "in_progress"),
+                    "pending": sum(1 for j in jobs if j.get("status") == "pending"),
+                    "failed": sum(1 for j in jobs if j.get("status") == "failed"),
+                },
+                "tests": {
+                    "total": len(tests),
+                    "pass": sum(1 for t in tests if t.get("status") == "pass"),
+                    "fail": sum(1 for t in tests if t.get("status") == "fail"),
+                },
+                "file_changes": len(changes),
+                "corrections": len(data.get("corrections", [])),
+            }
+            data["summary"] = summary
+            data["recent_events"] = list(reversed(data.get("events", [])[-50:]))
+            data["recent_file_changes"] = list(reversed(changes[-50:]))
+            return data
+
+    def record_project(self, payload):
+        payload = payload or {}
+        kind = str(payload.get("kind") or payload.get("type") or "event").strip().lower()
+        now = self._now_iso()
+        with self.lock:
+            if kind == "milestone":
+                milestone = {
+                    "id": payload.get("id") or f"m{len(self.project_progress['milestones']) + 1}",
+                    "title": str(payload.get("title") or "Untitled milestone").strip(),
+                    "status": str(payload.get("status") or "pending").strip(),
+                    "description": str(payload.get("description") or "").strip(),
+                    "created_at": now, "updated_at": now,
+                }
+                existing = next((m for m in self.project_progress["milestones"] if m["id"] == milestone["id"]), None)
+                if existing:
+                    existing.update({k: v for k, v in milestone.items() if k != "created_at"})
+                    existing["updated_at"] = now
+                    milestone = existing
+                else:
+                    self.project_progress["milestones"].append(milestone)
+                self.project_progress["events"].append(
+                    {"id": f"e{len(self.project_progress['events']) + 1}", "kind": "milestone",
+                     "title": milestone["title"], "timestamp": now, "details": milestone["status"]})
+            elif kind == "job":
+                job = {
+                    "id": payload.get("id") or f"j{len(self.project_progress['jobs']) + 1}",
+                    "title": str(payload.get("title") or "Untitled job").strip(),
+                    "kind": str(payload.get("job_kind") or payload.get("job_type") or "edit").strip(),
+                    "files": list(payload.get("files") or []),
+                    "intended": str(payload.get("intended") or "").strip(),
+                    "status": str(payload.get("status") or "done").strip(),
+                    "timestamp": now,
+                    "result": str(payload.get("result") or "").strip(),
+                    "correction_of": payload.get("correction_of"),
+                }
+                existing = next((j for j in self.project_progress["jobs"] if j["id"] == job["id"]), None)
+                if existing:
+                    existing.update(job)
+                    existing["timestamp"] = now
+                    job = existing
+                else:
+                    self.project_progress["jobs"].append(job)
+                self.project_progress["events"].append(
+                    {"id": f"e{len(self.project_progress['events']) + 1}", "kind": "job",
+                     "title": job["title"], "timestamp": now, "details": f"{job['status']} · {', '.join(job['files'])}"})
+            elif kind == "test":
+                test = {
+                    "name": str(payload.get("name") or "Unnamed test").strip(),
+                    "status": str(payload.get("status") or "pass").strip(),
+                    "timestamp": now,
+                    "details": str(payload.get("details") or "").strip(),
+                }
+                self.project_progress["tests"].append(test)
+                self.project_progress["events"].append(
+                    {"id": f"e{len(self.project_progress['events']) + 1}", "kind": "test",
+                     "title": test["name"], "timestamp": now, "details": f"{test['status']} · {test['details']}"})
+            elif kind == "correction":
+                correction = {
+                    "id": f"c{len(self.project_progress['corrections']) + 1}",
+                    "target_type": str(payload.get("target_type") or "job").strip(),
+                    "target_id": str(payload.get("target_id") or "").strip(),
+                    "reason": str(payload.get("reason") or "").strip(),
+                    "timestamp": now,
+                }
+                self.project_progress["corrections"].append(correction)
+                self.project_progress["events"].append(
+                    {"id": f"e{len(self.project_progress['events']) + 1}", "kind": "correction",
+                     "title": f"Correction: {correction['target_type']} {correction['target_id']}",
+                     "timestamp": now, "details": correction["reason"]})
+                # mark target corrected when possible
+                collection = self.project_progress["milestones"] if correction["target_type"] == "milestone" else self.project_progress["jobs"]
+                for item in collection:
+                    if item.get("id") == correction["target_id"]:
+                        item["status"] = "corrected"
+                        item["updated_at" if "updated_at" in item else "timestamp"] = now
+            elif kind == "file_change":
+                change = {
+                    "path": str(payload.get("path") or "").strip(),
+                    "mtime": payload.get("mtime"),
+                    "status": str(payload.get("status") or "changed").strip(),
+                    "detected_at": now,
+                }
+                self.project_progress["file_changes"].append(change)
+                # keep bounded
+                self.project_progress["file_changes"] = self.project_progress["file_changes"][-500:]
+                self.project_progress["events"].append(
+                    {"id": f"e{len(self.project_progress['events']) + 1}", "kind": "file_change",
+                     "title": change["path"], "timestamp": now, "details": change["status"]})
+                self.project_progress["events"] = self.project_progress["events"][-500:]
+            else:
+                self.project_progress["events"].append(
+                    {"id": f"e{len(self.project_progress['events']) + 1}", "kind": kind,
+                     "title": str(payload.get("title") or kind).strip(),
+                     "timestamp": now, "details": str(payload.get("details") or "").strip()})
+                self.project_progress["events"] = self.project_progress["events"][-500:]
+            self._save_project_progress()
+            return {"ok": True, "kind": kind, "updated_at": self.project_progress["updated_at"]}
 
     def timeline(self):
         return self.relay.status()["activity"]
@@ -377,11 +596,17 @@ class Handler(BaseHTTPRequestHandler):
         path = urlparse(self.path).path
         if path == "/api/status": return self.json(200, self.app().status())
         if path == "/api/csrf": return self.json(200, {"csrf": self.app().csrf})
-        if path == "/": path = "/index.html"
-        if path == "/index.html":
+        if path == "/api/project": return self.json(200, self.app().project_status())
+        if path in ("/", "/index.html"):
             body = (ROOT / "index.html").read_bytes(); self.send_response(200)
             self.send_header("Content-Type", "text/html; charset=utf-8"); self.send_header("Content-Length", str(len(body)))
             self.end_headers(); self.wfile.write(body); return
+        if path in ("/project", "/project-dashboard", "/project_dashboard.html"):
+            page = ROOT / "project_dashboard.html"
+            if page.exists():
+                body = page.read_bytes(); self.send_response(200)
+                self.send_header("Content-Type", "text/html; charset=utf-8"); self.send_header("Content-Length", str(len(body)))
+                self.end_headers(); self.wfile.write(body); return
         self.send_error(404)
     def do_POST(self):
         expected = {f"http://127.0.0.1:{self.server.server_port}", f"http://localhost:{self.server.server_port}"}
@@ -393,11 +618,46 @@ class Handler(BaseHTTPRequestHandler):
             if path == "/api/settings": result = {"ok": True, "settings": self.app().save(data)}
             elif path == "/api/pairs/save": result = self.app().save_pair(data)
             elif path == "/api/pairs/select": result = self.app().select_pair(data.get("id"))
+            elif path == "/api/project/record": result = self.app().record_project(data)
             elif path in ("/api/start", "/api/stop", "/api/verify", "/api/refresh"): result = self.app().mutate(path.rsplit("/", 1)[1], data)
             else: return self.json(404, {"error": "not found"})
             return self.json(200, result)
         except Exception as exc: return self.json(409, {"error": str(exc), **({"field_errors": exc.errors} if isinstance(exc, PairValidationError) else {})})
     def log_message(self, *args): pass
+
+
+def _project_files(root):
+    ignored = {".git", "node_modules", "__pycache__", ".runtime", ".dashboard-runtime", ".pytest_cache"}
+    result = {}
+    for dirpath, dirnames, filenames in os.walk(root):
+        dirnames[:] = [name for name in dirnames if name not in ignored and not name.startswith(".pytest")]
+        for filename in filenames:
+            path = Path(dirpath) / filename
+            try:
+                result[str(path.relative_to(root))] = path.stat().st_mtime
+            except OSError:
+                continue
+    return result
+
+
+def start_project_watcher(app, root, stop_event):
+    known = _project_files(root)
+    while not stop_event.is_set():
+        time.sleep(5)
+        current = _project_files(root)
+        for path, mtime in current.items():
+            if path not in known or known.get(path) != mtime:
+                try:
+                    app.record_project({"kind": "file_change", "path": path, "mtime": mtime, "status": "modified" if path in known else "added"})
+                except Exception:
+                    pass
+        for path in known:
+            if path not in current:
+                try:
+                    app.record_project({"kind": "file_change", "path": path, "status": "deleted"})
+                except Exception:
+                    pass
+        known = current
 
 
 def make_server(app, port=DEFAULT_PORT):
@@ -408,10 +668,14 @@ def main():
     parser = argparse.ArgumentParser(); parser.add_argument("--runtime", default=str(DEFAULT_RUNTIME)); parser.add_argument("--port", type=int, default=DEFAULT_PORT); parser.add_argument("--open", action="store_true")
     args = parser.parse_args(); app = App(args.runtime); server = make_server(app, args.port)
     url = f"http://127.0.0.1:{server.server_port}/"; print(url, flush=True)
+    stop_event = threading.Event()
+    watcher = threading.Thread(target=start_project_watcher, args=(app, ROOT, stop_event), daemon=True)
+    watcher.start()
     if args.open: webbrowser.open(url)
     try: server.serve_forever()
     except KeyboardInterrupt: pass
     finally:
+        stop_event.set()
         app.relay.stop(); server.server_close()
 
 

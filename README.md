@@ -26,6 +26,8 @@ Each Start creates a fresh in-memory session, clears previous activity/errors/ho
 - Worker delivery and completion are identified from the selected OpenCode session export; `opencode run` has no fixed timeout.
 - No real provider messaging is performed by automated tests.
 
+The main dashboard includes a **Project Dashboard** button next to Graceful Stop for live progress, milestones, file changes, tests, and corrections.
+
 ```sh
 python3 -m unittest discover -v
 python3 -m py_compile dashboard.py relayloop_dashboard.py relayloop_runner.py test_dashboard.py test_relayloop_runner.py
