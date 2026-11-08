@@ -194,7 +194,7 @@ function render(data) {
   $('errors').textContent = data.error || 'None reported';
   $('errors').className = 'value ' + (data.error ? 'error' : '');
   const locked = active || !!data.pending || !!data.unresolved;
-  const anyRunning = (data.pairs_status || []).some((p) => p.status === 'running');
+  const anyRunning = (data.pairs_status || []).some((p) => p.status === 'running' || p.pending || p.unresolved || p.phase === 'planner_timeout' || p.phase === 'worker_prompt_unavailable');
   $('start').hidden = !anyRunning;
   $('start').disabled = !anyRunning || pairBusy;
   $('refresh_run').disabled = active || pairBusy;
@@ -209,7 +209,7 @@ function render(data) {
   if ($('settings_runtime')) $('settings_runtime').textContent = data.runtime || '—';
   if ($('settings_port')) $('settings_port').textContent = location.port || String(data.default_port || '—');
   if ($('settings_adapter')) $('settings_adapter').textContent = data.adapter_dir || '—';
-  if ($('settings_service')) $('settings_service').textContent = anyRunning ? 'Running (at least one pair)' : 'Stopped';
+  if ($('settings_service')) $('settings_service').textContent = anyRunning ? 'Active (running or on hold)' : 'Stopped';
   $('clock').textContent = data.now || '';
   const timeline = $('timeline');
   timeline.replaceChildren();
