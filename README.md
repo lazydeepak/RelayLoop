@@ -30,6 +30,6 @@ The main dashboard includes a **Project Dashboard** button next to Graceful Stop
 
 ```sh
 python3 -m unittest discover -v
-python3 -m py_compile dashboard.py relayloop_dashboard.py relayloop_runner.py test_dashboard.py test_relayloop_runner.py
+python3 -m py_compile relayloop.py relayloop_dashboard.py relayloop_runner.py test_dashboard.py test_relayloop_runner.py
 node --check send_chatgpt.js
 ```

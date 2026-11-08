@@ -7,7 +7,7 @@ import unittest
 from pathlib import Path
 from urllib.request import Request, urlopen
 
-from dashboard import App, DEFAULT_PORT, make_server, validate_settings
+from relayloop import App, DEFAULT_PORT, make_server, validate_settings
 from relayloop_runner import LiveAdapters
 from relayloop_dashboard import ARCHIVE, _patch_extractor_source
 
