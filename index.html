@@ -49,7 +49,10 @@
 .sidebar button{width:100%;display:flex;align-items:center;gap:10px;padding:9px 10px;border-radius:8px;border:1px solid transparent;background:transparent;color:var(--muted);font-size:12px;font-weight:500;cursor:pointer;text-align:left}
 .sidebar button:hover{color:var(--text);background:rgba(77,226,255,.08)}
 .sidebar button.active{background:var(--cyan);color:#06101c;box-shadow:0 4px 14px rgba(77,226,255,.25)}
-.sidebar button .icon{width:16px;text-align:center}
+.sidebar button .icon{width:16px;text-align:center;display:inline-flex;align-items:center;justify-content:center}
+.sidebar.is-collapsed{width:64px}
+.sidebar.is-collapsed .nav-label,.sidebar.is-collapsed .section-label,.sidebar.is-collapsed .brand-copy{display:none}
+.sidebar.is-collapsed button{justify-content:center;padding:9px}
 .main-area{min-width:0;padding:20px;overflow:auto}
 .page{display:none}
 .page.active{display:block}
@@ -58,13 +61,14 @@
 </head><body><div class="app-shell"><aside class="sidebar" id="sidebar">
 <div class="brand"><div style="width:30px;height:30px;border-radius:8px;background:linear-gradient(135deg,#4de2ff,#43d17a);display:grid;place-items:center;font-weight:700;color:#06101c">R</div><div><div class="brand-title">RelayLoop</div><div class="brand-sub">Secure command center</div></div></div>
 <div class="section-label">What is happening</div>
-<button data-page="overview" class="active"><span class="icon">O</span>Overview</button>
-<button data-page="project"><span class="icon">P</span>Project Dashboard</button>
+<button class="sidebar-fold-toggle" id="foldBtn" type="button"><span class="icon">◀</span><span class="nav-label">Fold navigation</span></button>
+<button data-page="overview" class="active"><span class="icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg></span><span class="nav-label">Overview</span></button>
+<button data-page="project"><span class="icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3h18v18H3z"/><path d="M3 9h18M9 3v18"/></svg></span><span class="nav-label">Project Dashboard</span></button>
 <div class="section-label">Where I work</div>
-<button data-page="pairs"><span class="icon">R</span>Pairs</button>
-<button data-page="connections"><span class="icon">C</span>Connections</button>
+<button data-page="pairs"><span class="icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></span><span class="nav-label">Pairs</span></button>
+<button data-page="connections"><span class="icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg></span><span class="nav-label">Connections</span></button>
 <div class="section-label">What I control</div>
-<button data-page="settings"><span class="icon">S</span>Settings</button>
+<button data-page="settings"><span class="icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></span><span class="nav-label">Settings</span></button>
 </aside><main class="main-area">
 <section id="page-overview" class="page active"><header class="top"><div><div class="eyebrow">RelayLoop · independent conversation relay</div><h1>Planner ↔ Worker</h1><div class="clock" id="clock">Local time</div></div><div class="actions"><button id="refresh_run" type="button" title="Refresh Planner and clear held session state">Refresh</button><button id="start">Start Automation</button><button id="stop" disabled>Graceful Stop</button><button id="project_dashboard" type="button" onclick="window.open('/project-dashboard','_blank')" title="Open the RelayLoop project progress dashboard">Project Dashboard</button></div></header>
 <section class="layout">
@@ -439,6 +443,8 @@ for (const [inputId, errorId, key] of [['profile_name','name_error','name'],['pr
 </script>
 <script>
 (function(){
+  const sidebar = document.getElementById('sidebar');
+  const foldBtn = document.getElementById('foldBtn');
   const buttons = document.querySelectorAll('#sidebar button[data-page]');
   const pages = document.querySelectorAll('.page');
   function show(page){
@@ -446,6 +452,14 @@ for (const [inputId, errorId, key] of [['profile_name','name_error','name'],['pr
     buttons.forEach(b => b.classList.toggle('active', b.dataset.page === page));
   }
   buttons.forEach(b => b.addEventListener('click', () => show(b.dataset.page)));
+  function setFolded(folded){
+    sidebar.classList.toggle('is-collapsed', folded);
+    foldBtn.querySelector('.nav-label').textContent = folded ? 'Expand navigation' : 'Fold navigation';
+    foldBtn.querySelector('.icon').textContent = folded ? '▶' : '◀';
+  }
+  const compact = window.matchMedia('(min-width: 761px) and (max-width: 1100px)').matches || window.innerWidth < 761;
+  setFolded(compact);
+  foldBtn.addEventListener('click', () => setFolded(!sidebar.classList.contains('is-collapsed')));
   show('overview');
 })();
 </script></body></html>
