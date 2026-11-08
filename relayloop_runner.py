@@ -347,10 +347,16 @@ class RelayRunner:
                     self.state["planner_wait_deadline"] = time.time() + self.planner_wait_timeout
                 else:
                     # Idle/ambiguous non-active snapshots use Planner as default.
+                    # If Planner is idle on an assistant message, immediately ask
+                    # it for the next prompt (Start always looks for it). If the
+                    # last turn is a user query still awaiting an answer, do not
+                    # prompt — wait for that answer instead.
                     self.state["last_planner_id"] = planner.get("id") if planner else None
                     self.state["last_worker_id"] = latest_worker.get("id") if latest_worker else None
                     self.state["phase"] = "waiting_for_planner"
                     self.state["planner_wait_deadline"] = time.time() + self.planner_wait_timeout
+                    if planner and planner.get("role") == "assistant" and planner.get("completed"):
+                        self.state["start_prompt_pending"] = True
                 self.stop_event.clear()
                 self.running = True
                 self._event("start", "New session started; Planner and Worker baselines established")
@@ -430,6 +436,32 @@ class RelayRunner:
             while not self.stop_event.is_set():
                 if self.state.get("unresolved"):
                     break
+                if self.state.pop("start_prompt_pending", False):
+                    prompt = "Worker is connected with RelayLoop, prompt please, automation started"
+                    operation = self._new_operation("relayloop_to_planner", self.state.get("last_planner_id") or "relayloop-start", prompt)
+                    self._begin_operation(operation)
+                    operation["stage"] = "requesting_worker_prompt"
+                    self._event("start_prompt", "Automation started — prompting Planner for the next Worker prompt")
+                    try:
+                        self._submit_and_confirm_planner(operation)
+                    except Exception as exc:
+                        with self.lock:
+                            pending_op = self.state.get("pending")
+                            if pending_op and pending_op.get("submission_attempted"):
+                                self.state["unresolved"] = {**pending_op, "reason": str(exc)}
+                                self.state["pending"] = None
+                                self.state["phase"] = "unresolved"
+                            elif pending_op and pending_op.get("direction") == "worker_to_planner":
+                                pending_op["stage"] = "planner_ready_timeout" if isinstance(exc, PlannerReadinessTimeout) else "planner_readiness_error"
+                                self.state["phase"] = pending_op["stage"]
+                            else:
+                                if pending_op:
+                                    self.state["unresolved"] = {**pending_op, "reason": str(exc)}
+                                    self.state["pending"] = None
+                                    self.state["phase"] = "unresolved"
+                            self._event("error", str(exc), "error")
+                        break
+                    continue
                 try:
                     if self.state["expected_speaker"] == "planner": self._planner_turn()
                     else: self._worker_turn()

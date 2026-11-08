@@ -282,8 +282,10 @@ class DashboardTests(unittest.TestCase):
             self.assertTrue(json.loads(urlopen(request).read())["ok"])
             self.adapters.planner = {"id": "planner-1", "text": "hello", "role": "assistant", "completed": True}
             deadline = time.time() + 3
-            while time.time() < deadline and not self.adapters.sent_planner: time.sleep(.01)
+            while time.time() < deadline and not any("reply:hello" in text for _, text in self.adapters.sent_planner): time.sleep(.01)
             state = json.loads(urlopen(base + "/api/status").read())
+            while time.time() < deadline and not any(x["kind"] == "delivery" and "Planner → Worker" in x["message"] for x in state["timeline"]):
+                time.sleep(.05); state = json.loads(urlopen(base + "/api/status").read())
             self.assertEqual(state["status"], "running")
             self.assertTrue(any(x["kind"] == "delivery" and "Planner → Worker" in x["message"] for x in state["timeline"]))
             request = Request(base + "/api/stop", data=b"{}", method="POST", headers={

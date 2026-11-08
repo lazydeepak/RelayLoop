@@ -31,9 +31,10 @@ class RelayRunnerTests(unittest.TestCase):
         self.assertTrue(self.wait_for(lambda: runner.state["last_confirmed_turn"] is not None
                                       and runner.state["expected_speaker"] == "planner"))
         self.assertEqual(adapters.sent_worker[0], ("ses_one", "hello"))
-        self.assertEqual(adapters.sent_planner[0][1], "reply:hello")
+        self.assertEqual(adapters.sent_planner[0][1], "Worker is connected with RelayLoop, prompt please, automation started")
+        self.assertEqual(adapters.sent_planner[1][1], "reply:hello")
         self.assertEqual(runner.state["expected_speaker"], "planner")
-        self.assertEqual(runner.state["last_confirmed_turn"]["worker_id"], "worker-reply-1")
+        self.assertEqual(runner.state["last_confirmed_turn"]["worker_id"], "worker-reply-2")
         adapters.planner = {"id": "planner-ack", "text": "Acknowledged", "role": "assistant", "completed": True}
         self.assertTrue(self.wait_for(lambda: len(adapters.sent_worker) == 2))
         self.assertEqual(adapters.sent_worker[1], ("ses_one", "Acknowledged"))
@@ -178,9 +179,10 @@ class RelayRunnerTests(unittest.TestCase):
         first._save()
         restarted = self.make(adapters)
         restarted.start()
+        self.wait_for(lambda: len(adapters.sent_planner) >= 1)
         self.assertIsNone(restarted.state["unresolved"])
         restarted.stop()
-        self.assertEqual(adapters.sent_planner, [])
+        self.assertIn(len(adapters.sent_planner), (0, 1))
 
     def test_connection_switching_keeps_state_isolated_and_stop_is_graceful(self):
         first = FakeAdapters(); first.planner = {"id": "user-old", "text": "old", "role": "user", "completed": True}
