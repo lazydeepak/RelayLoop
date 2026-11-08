@@ -59,8 +59,6 @@
 .main-area{min-width:0;width:100%;max-width:100%;padding:20px;overflow:auto}
 .page{display:none;width:100%;max-width:100%}
 .page.active{display:block}
-.page{display:none}
-.page.active{display:block}
 @media(max-width:900px){.app-shell{grid-template-columns:1fr}.sidebar{display:none}}
 
 .brand-mark{width:30px;height:30px;border-radius:8px;background:linear-gradient(135deg,#4de2ff,#43d17a);display:grid;place-items:center;font-weight:700;color:#06101c}

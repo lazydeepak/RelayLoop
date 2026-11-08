@@ -4,15 +4,18 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>RelayLoop Project Dashboard</title>
+<link rel="stylesheet" href="/relayloop.css">
 <style>
-:root{color-scheme:dark;--bg:#071018;--panel:#0f1d2a;--line:#263a4d;--text:#e8f1f8;--muted:#93a9bc;--cyan:#67d8e5;--green:#83d89e;--amber:#f0bb58;--red:#ff8174;--violet:#b8a1ff}
-*{box-sizing:border-box}body{margin:0;background:radial-gradient(circle at top,#10243a 0%,var(--bg) 58%);color:var(--text);font:16px -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+:root{color-scheme:dark;--violet:#b8a1ff;--input-bg:#09121c;--button-bg:#172737;--button-hover:#1d3348}
+:root[data-theme="light"]{color-scheme:light;--violet:#6d5bd0;--input-bg:#ffffff;--button-bg:#e3e9f0;--button-hover:#d5dee8}
+@media (prefers-color-scheme: light){:root:not([data-theme="dark"]):not([data-theme="light"]){color-scheme:light;--violet:#6d5bd0;--input-bg:#ffffff;--button-bg:#e3e9f0;--button-hover:#d5dee8}}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font:16px -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
 main{max-width:1280px;margin:auto;padding:24px}
 header{display:flex;justify-content:space-between;align-items:end;border-bottom:1px solid var(--line);padding-bottom:16px;margin-bottom:18px}
 h1{margin:6px 0;font-size:30px} .eyebrow{color:var(--cyan);font-size:11px;letter-spacing:.14em;text-transform:uppercase}
 .sub{color:var(--muted);font-size:13px}
 .grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px;margin:18px 0}
-.card{background:linear-gradient(180deg,#122331,#0d1a26);border:1px solid var(--line);border-radius:14px;padding:18px;min-width:0;overflow:hidden;box-shadow:0 10px 30px #00000033}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:18px;min-width:0;overflow:hidden;box-shadow:0 10px 30px #00000033}
 .card h2{margin:0 0 12px;font-size:17px;letter-spacing:.04em}
 .value{font-size:32px;font-weight:700;margin:8px 0}
 .label{color:var(--muted);font-size:12px;text-transform:uppercase;letter-spacing:.1em}
@@ -27,27 +30,27 @@ h1{margin:6px 0;font-size:30px} .eyebrow{color:var(--cyan);font-size:11px;letter
 .bar-row > div{min-width:0;overflow:hidden}
 .bar-row > div:first-child{text-overflow:ellipsis;white-space:nowrap}
 .bar-row > div:last-child{text-align:right}
-.bar{height:8px;border-radius:999px;background:#1b2f40;overflow:hidden}
+.bar{height:8px;border-radius:999px;background:var(--control-hover);overflow:hidden}
 .bar > span{display:block;height:100%;border-radius:999px}
 .table-wrap{overflow-y:auto;overflow-x:hidden;max-height:360px;border:1px solid var(--line);border-radius:10px}
 table{width:100%;border-collapse:collapse;font-size:13px;table-layout:fixed}
-th,td{padding:8px;border-bottom:1px solid #1f3142;text-align:left;vertical-align:top;word-break:break-word;overflow-wrap:anywhere}
-th{position:sticky;top:0;background:#10202d;color:var(--muted);text-transform:uppercase;font-size:10px;letter-spacing:.08em}
-tr:hover td{background:#132636}
+th,td{padding:8px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top;word-break:break-word;overflow-wrap:anywhere}
+th{position:sticky;top:0;background:var(--panel);color:var(--muted);text-transform:uppercase;font-size:10px;letter-spacing:.08em}
+tr:hover td{background:var(--control)}
 .badge{display:inline-block;padding:3px 8px;border-radius:999px;font-size:10px;font-weight:700;letter-spacing:.04em}
-.badge.done{background:#183b2a;color:var(--green)} .badge.in_progress{background:#3a3418;color:var(--amber)} .badge.pending{background:#2a2238;color:var(--violet)} .badge.failed,.badge.corrected{background:#3a1f24;color:var(--red)}
+.badge.done{background:var(--green);color:var(--bg)} .badge.in_progress{background:var(--amber);color:var(--bg)} .badge.pending{background:var(--violet);color:var(--bg)} .badge.failed,.badge.corrected{background:var(--red);color:var(--bg)}
 .timeline{display:grid;gap:10px;max-height:420px;overflow:auto}
-.event{padding:12px;border-left:3px solid var(--cyan);background:#0d1924;border-radius:0 10px 10px 0}
+.event{padding:12px;border-left:3px solid var(--cyan);background:var(--panel);border-radius:0 10px 10px 0}
 .event strong{color:var(--cyan)} .event .time{color:var(--muted);font-size:11px;font-family:ui-monospace,monospace}
 .section{margin-top:18px}
 .actions{display:flex;gap:10px;align-items:center}
-button{background:#172737;border:1px solid var(--line);color:var(--text);padding:10px 14px;border-radius:10px;cursor:pointer}
-button:hover{border-color:var(--cyan);color:var(--cyan)}
+button{background:var(--button-bg);border:1px solid var(--line);color:var(--text);padding:10px 14px;border-radius:10px;cursor:pointer}
+button:hover{background:var(--button-hover);border-color:var(--cyan);color:var(--cyan)}
 @media(max-width:900px){.grid{grid-template-columns:repeat(2,1fr)}.chart-wrap{grid-template-columns:1fr}}
 @media(max-width:560px){.grid{grid-template-columns:1fr}main{padding:16px}}
 .modal{position:fixed;inset:0;background:#000000aa;display:none;align-items:center;justify-content:center;padding:20px;z-index:1000}
 .modal.open{display:flex}
-.modal-panel{width:min(760px,100%);max-height:90vh;overflow:auto;background:linear-gradient(180deg,#122331,#0d1a26);border:1px solid var(--line);border-radius:16px;padding:20px;box-shadow:0 20px 60px #00000066}
+.modal-panel{width:min(760px,100%);max-height:90vh;overflow:auto;background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:20px;box-shadow:0 20px 60px #00000066}
 .modal-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px}
 .modal-head h2{margin:0}
 .close-btn{background:transparent;border:1px solid var(--line);color:var(--muted)}
@@ -56,7 +59,7 @@ button:hover{border-color:var(--cyan);color:var(--cyan)}
 .guidelines-list{margin:10px 0 0 18px;line-height:1.7}
 .form-3{grid-template-columns:repeat(3,minmax(0,1fr))}
 .form-4{grid-template-columns:repeat(4,minmax(0,1fr))}
-.textarea-block{width:100%;min-height:80px;background:#09121c;color:var(--text);border:1px solid var(--line);border-radius:8px;padding:8px}
+.textarea-block{width:100%;min-height:80px;background:var(--input-bg);color:var(--text);border:1px solid var(--line);border-radius:8px;padding:8px}
 .actions-spaced{margin-top:10px}
 .actions-spaced-12{margin-top:12px}
 .clickable-row{cursor:pointer}
