@@ -181,6 +181,17 @@ button:hover{border-color:var(--cyan);color:var(--cyan)}
 </section>
 
 <section class="section card">
+<h2>Record correction</h2>
+<div class="form" style="grid-template-columns:repeat(3,minmax(0,1fr))">
+<label>Target type<select id="c_type"><option value="milestone">milestone</option><option value="job">job</option></select></label>
+<label>Target ID<input id="c_target"></label>
+<label>Reason<input id="c_reason"></label>
+</div>
+<div class="actions" style="margin-top:10px"><button onclick="saveCorrection()">Record correction</button></div>
+<div class="sub" id="c_msg"></div>
+</section>
+
+<section class="section card">
 <h2>Activity timeline</h2>
 <div class="timeline" id="timeline"></div>
 </section>
@@ -189,6 +200,8 @@ button:hover{border-color:var(--cyan);color:var(--cyan)}
 <script>
 const $ = (id) => document.getElementById(id);
 let csrf = '';
+let milestoneMap = {};
+let jobMap = {};
 async function ensureCsrf() {
   if (csrf) return csrf;
   const res = await fetch('/api/csrf');
@@ -221,6 +234,20 @@ async function saveMilestone() {
     refresh();
   } catch (error) {
     $('m_msg').textContent = error.message;
+  }
+}
+async function saveCorrection() {
+  try {
+    await postRecord({
+      kind: 'correction',
+      target_type: val('c_type'),
+      target_id: val('c_target'),
+      reason: val('c_reason')
+    });
+    $('c_msg').textContent = 'Correction recorded.';
+    refresh();
+  } catch (error) {
+    $('c_msg').textContent = error.message;
   }
 }
 async function saveJob() {
@@ -289,10 +316,12 @@ async function refresh(){
   const fileTotal = topFiles.reduce((n,x)=>n+x[1],0) || 1;
   barRows($('fileBars'), topFiles.map(([p,n])=>[p.split('/').pop(), n, fileTotal]), 'var(--violet)');
 
+  milestoneMap = Object.fromEntries((data.milestones || []).map((m) => [m.id, m]));
   $('milestoneTable').innerHTML = (data.milestones||[]).map(m =>
-    `<tr><td>${m.priority ?? 5}</td><td>${m.id}</td><td>${m.title}</td><td>${badge(m.status)}</td><td>${m.description||''}</td><td>${shortTime(m.updated_at||m.created_at)}</td></tr>`).join('') || '<tr><td colspan="6">No milestones.</td></tr>';
+    `<tr data-id="${m.id}" style="cursor:pointer"><td>${m.priority ?? 5}</td><td>${m.id}</td><td>${m.title}</td><td>${badge(m.status)}</td><td>${m.description||''}</td><td>${shortTime(m.updated_at||m.created_at)}</td></tr>`).join('') || '<tr><td colspan="6">No milestones.</td></tr>';
+  jobMap = Object.fromEntries((data.jobs || []).map((j) => [j.id, j]));
   $('jobTable').innerHTML = (data.jobs||[]).map(j =>
-    `<tr><td>${j.priority ?? 5}</td><td>${j.id}</td><td>${j.title}</td><td>${j.kind}</td><td>${badge(j.status)}</td><td>${(j.files||[]).join(', ')||'—'}</td><td>${j.intended||''}</td><td>${j.result||''}</td><td>${shortTime(j.timestamp)}</td></tr>`).join('') || '<tr><td colspan="9">No jobs.</td></tr>';
+    `<tr data-id="${j.id}" style="cursor:pointer"><td>${j.priority ?? 5}</td><td>${j.id}</td><td>${j.title}</td><td>${j.kind}</td><td>${badge(j.status)}</td><td>${(j.files||[]).join(', ')||'—'}</td><td>${j.intended||''}</td><td>${j.result||''}</td><td>${shortTime(j.timestamp)}</td></tr>`).join('') || '<tr><td colspan="9">No jobs.</td></tr>';
   $('testTable').innerHTML = (data.tests||[]).map(t =>
     `<tr><td>${t.name}</td><td>${badge(t.status)}</td><td>${t.details||''}</td><td>${shortTime(t.timestamp)}</td></tr>`).join('') || '<tr><td colspan="4">No tests.</td></tr>';
   $('fileTable').innerHTML = (data.recent_file_changes||[]).slice(0,40).map(c =>
@@ -302,6 +331,33 @@ async function refresh(){
   $('timeline').innerHTML = (data.recent_events||[]).map(e =>
     `<div class="event"><div class="time">${shortTime(e.timestamp)}</div><strong>${e.kind}</strong> · ${e.title}<div class="sub">${e.details||''}</div></div>`).join('') || '<div class="sub">No events yet.</div>';
 }
+document.addEventListener('click', (event) => {
+  const milestoneRow = event.target.closest('#milestoneTable tr[data-id]');
+  if (milestoneRow) {
+    const m = milestoneMap[milestoneRow.dataset.id];
+    if (m) {
+      $('m_id').value = m.id || '';
+      $('m_title').value = m.title || '';
+      $('m_status').value = m.status || 'pending';
+      $('m_priority').value = m.priority ?? 5;
+      $('m_desc').value = m.description || '';
+    }
+  }
+  const jobRow = event.target.closest('#jobTable tr[data-id]');
+  if (jobRow) {
+    const j = jobMap[jobRow.dataset.id];
+    if (j) {
+      $('j_id').value = j.id || '';
+      $('j_title').value = j.title || '';
+      $('j_kind').value = j.kind || 'edit';
+      $('j_status').value = j.status || 'pending';
+      $('j_priority').value = j.priority ?? 5;
+      $('j_files').value = (j.files || []).join(', ');
+      $('j_intended').value = j.intended || '';
+      $('j_result').value = j.result || '';
+    }
+  }
+});
 refresh();
 setInterval(refresh,5000);
 </script>
