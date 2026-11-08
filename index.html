@@ -17,7 +17,6 @@
 <section id="page-overview" class="page active">
 <section class="layout">
 <article class="card full"><div class="label">Active pairs</div><div class="sub">All saved pairs with live relay state. Multiple pairs can run concurrently.</div><div id="active_pairs" class="pairs-list mt-12"></div></article>
-<article class="card full"><div class="label">Current runtime connection</div><div class="sub">Used by Save Connections, Verify, and automation. Manage saved pairs on the Pairs page.</div><div class="form-actions"><button type="button" onclick="document.querySelector('#sidebar button[data-page=pairs]').click()">Manage pairs</button></div><div class="runtime-heading">Runtime connection</div><div class="form"><label>Planner URL<input id="planner_url" autocomplete="off"></label><label>Worker session ID<input id="worker_session" autocomplete="off"></label></div><div class="form-actions"><button id="save">Save Connections</button><button id="verify">Verify Connections</button></div><div class="sub" id="message">Verify checks both destinations without starting the relay. Start continues an active turn from either side; when both are idle, Planner goes first.</div></article>
 <section class="card live" aria-labelledby="live-title"><div class="live-head"><h2 id="live-title">Live Run</h2><span class="label">Observed status</span></div><div class="track" role="group" aria-label="Planner to Worker to Planner handoff track"><span class="node" id="planner_node">Planner<span class="expected-tag" id="planner_expected" hidden>Expected</span></span><div class="track-segment"><span class="arrow" id="arrow_out" aria-hidden="true">→</span><span class="track-badge" id="out_badge">Idle</span></div><span class="node" id="worker_node">Worker<span class="expected-tag" id="worker_expected" hidden>Expected</span></span><div class="track-segment"><span class="arrow" id="arrow_back" aria-hidden="true">→</span><span class="track-badge" id="back_badge">Idle</span></div><span class="node" id="planner_return">Planner</span></div><div class="track-note" id="handoff_note" role="status">Transport idle; no confirmed handoff observed.</div><div class="live-grid"><article class="live-state"><div class="label">Planner</div><div class="value" id="planner_state">Unknown</div><div class="sub" id="planner_detail">Planner state is not exposed.</div><div class="estimate" id="planner_estimate">UI-observed estimate: —</div></article><article class="live-state"><div class="label">Worker</div><div class="value" id="worker_state">Unknown</div><div class="sub" id="worker_detail">Worker readiness is not exposed.</div><div class="estimate" id="worker_estimate">UI-observed estimate: —</div></article><article class="live-state"><div class="label">Extraction</div><div class="value" id="extract_state">Idle</div><div class="estimate" id="extract_estimate">UI-observed estimate: —</div></article><article class="live-state"><div class="label">Transport</div><div class="value" id="transport_state">Idle</div><div class="estimate" id="transport_estimate">UI-observed estimate: —</div></article><article class="live-state"><div class="label">Automation</div><div class="value state" id="status">Stopped</div><div class="sub" id="health">Automation does not start automatically.</div><div class="sub" id="runtime">Elapsed: —</div></article><article class="live-state"><div class="label">Relay phase</div><div class="value" id="turn">Planner</div><div class="sub" id="turnsub">Waiting for a fresh completed assistant message.</div></article><article class="live-state"><div class="label">Extraction detail</div><div class="value" id="extraction">Idle</div><div class="sub" id="lastplanner">No message consumed yet.</div></article><article class="live-state"><div class="label">Delivery</div><div class="value" id="delivery">No pending delivery</div><div class="sub" id="lastworker">No confirmed turn yet.</div></article><article class="live-state"><div class="label">Errors</div><div class="value" id="errors">None reported</div></article></div><div class="sub" id="planner_countdown"></div></section>
 <article class="card timeline full"><div class="label">Recent activity</div><div class="timeline-scroll"><div class="timeline-head" aria-hidden="true"><span>Timestamp</span><span>Event</span><span>Direction</span><span>Duration</span><span>Outcome</span></div><ol id="timeline"><li><span>—</span><b>Ready</b><span>Verify connections, then explicitly start automation.</span></li></ol></div></article>
 </section></section>
@@ -202,8 +201,8 @@ function render(data) {
   $('save').disabled = locked || pairBusy;
   $('verify').disabled = locked || pairDraft || pairBusy;
   if (!dirty) {
-    $('planner_url').value = data.settings.planner_url || '';
-    $('worker_session').value = data.settings.worker_session || '';
+    if ($('planner_url')) $('planner_url').value = data.settings.planner_url || '';
+    if ($('worker_session')) $('worker_session').value = data.settings.worker_session || '';
   }
   $('clock').textContent = data.now || '';
   const timeline = $('timeline');
@@ -445,9 +444,9 @@ async function post(path, data = {}) {
   finally { await refresh(); pairBusy = false; await refresh(); if (focusAfterPost) { const input = $(focusAfterPost); if (!input.disabled) input.focus(); focusAfterPost = null; } }
 }
 
-for (const id of ['planner_url', 'worker_session']) $(id).addEventListener('input', () => { dirty = true; });
-$('save').onclick = () => post('/api/settings', { planner_url: $('planner_url').value, worker_session: $('worker_session').value });
-$('verify').onclick = () => post('/api/verify', { planner_url: $('planner_url').value, worker_session: $('worker_session').value });
+for (const id of ['planner_url', 'worker_session']) $(id)?.addEventListener('input', () => { dirty = true; });
+if ($('save')) $('save').onclick = () => post('/api/settings', { planner_url: $('planner_url').value, worker_session: $('worker_session').value });
+if ($('verify')) $('verify').onclick = () => post('/api/verify', { planner_url: $('planner_url').value, worker_session: $('worker_session').value });
 $('refresh_run').onclick = () => {
   if (!confirm('Refresh Planner and clear all pending or unresolved session state? If a message may already have been sent, starting again could duplicate it.')) return;
   post('/api/refresh');
