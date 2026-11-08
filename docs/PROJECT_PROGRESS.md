@@ -1,5 +1,7 @@
 # RelayLoop Project Progress Dashboard
 
+Agent workflow requirements are defined in `AGENTS.md` and are primary for all work.
+
 The project progress dashboard tracks development work, milestones, file edits, validation, and corrections for RelayLoop. It is available from the main dashboard via the **Project Dashboard** button next to **Graceful Stop**, or directly at `/project-dashboard`.
 
 ## Purpose
