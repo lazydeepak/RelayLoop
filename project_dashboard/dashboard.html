@@ -1,0 +1,448 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>RelayLoop Project Dashboard</title>
+<style>
+:root{color-scheme:dark;--bg:#071018;--panel:#0f1d2a;--line:#263a4d;--text:#e8f1f8;--muted:#93a9bc;--cyan:#67d8e5;--green:#83d89e;--amber:#f0bb58;--red:#ff8174;--violet:#b8a1ff}
+*{box-sizing:border-box}body{margin:0;background:radial-gradient(circle at top,#10243a 0%,var(--bg) 58%);color:var(--text);font:16px -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+main{max-width:1280px;margin:auto;padding:24px}
+header{display:flex;justify-content:space-between;align-items:end;border-bottom:1px solid var(--line);padding-bottom:16px;margin-bottom:18px}
+h1{margin:6px 0;font-size:30px} .eyebrow{color:var(--cyan);font-size:11px;letter-spacing:.14em;text-transform:uppercase}
+.sub{color:var(--muted);font-size:13px}
+.grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px;margin:18px 0}
+.card{background:linear-gradient(180deg,#122331,#0d1a26);border:1px solid var(--line);border-radius:14px;padding:18px;min-width:0;overflow:hidden;box-shadow:0 10px 30px #00000033}
+.card h2{margin:0 0 12px;font-size:17px;letter-spacing:.04em}
+.value{font-size:32px;font-weight:700;margin:8px 0}
+.label{color:var(--muted);font-size:12px;text-transform:uppercase;letter-spacing:.1em}
+.ok{color:var(--green)} .warn{color:var(--amber)} .bad{color:var(--red)} .info{color:var(--cyan)}
+.chart-wrap{display:grid;grid-template-columns:minmax(120px,1fr) minmax(0,1fr);gap:12px;align-items:center}
+.pie{width:120px;height:120px;max-width:100%;border-radius:50%;margin:auto;position:relative;box-shadow:inset 0 0 0 1px #ffffff12}
+.pie::after{content:"";position:absolute;inset:24px;border-radius:50%;background:var(--bg)}
+.legend{display:grid;gap:8px}
+.legend-row{display:flex;align-items:center;gap:8px;font-size:12px;flex-wrap:wrap;min-width:0}
+.dot{width:10px;height:10px;border-radius:50%}
+.bar-row{display:grid;grid-template-columns:minmax(0,2fr) minmax(0,1fr) 40px;gap:8px;align-items:center;margin:8px 0;font-size:12px}
+.bar-row > div{min-width:0;overflow:hidden}
+.bar-row > div:first-child{text-overflow:ellipsis;white-space:nowrap}
+.bar-row > div:last-child{text-align:right}
+.bar{height:8px;border-radius:999px;background:#1b2f40;overflow:hidden}
+.bar > span{display:block;height:100%;border-radius:999px}
+.table-wrap{overflow-y:auto;overflow-x:hidden;max-height:360px;border:1px solid var(--line);border-radius:10px}
+table{width:100%;border-collapse:collapse;font-size:13px;table-layout:fixed}
+th,td{padding:8px;border-bottom:1px solid #1f3142;text-align:left;vertical-align:top;word-break:break-word;overflow-wrap:anywhere}
+th{position:sticky;top:0;background:#10202d;color:var(--muted);text-transform:uppercase;font-size:10px;letter-spacing:.08em}
+tr:hover td{background:#132636}
+.badge{display:inline-block;padding:3px 8px;border-radius:999px;font-size:10px;font-weight:700;letter-spacing:.04em}
+.badge.done{background:#183b2a;color:var(--green)} .badge.in_progress{background:#3a3418;color:var(--amber)} .badge.pending{background:#2a2238;color:var(--violet)} .badge.failed,.badge.corrected{background:#3a1f24;color:var(--red)}
+.timeline{display:grid;gap:10px;max-height:420px;overflow:auto}
+.event{padding:12px;border-left:3px solid var(--cyan);background:#0d1924;border-radius:0 10px 10px 0}
+.event strong{color:var(--cyan)} .event .time{color:var(--muted);font-size:11px;font-family:ui-monospace,monospace}
+.section{margin-top:18px}
+.actions{display:flex;gap:10px;align-items:center}
+button{background:#172737;border:1px solid var(--line);color:var(--text);padding:10px 14px;border-radius:10px;cursor:pointer}
+button:hover{border-color:var(--cyan);color:var(--cyan)}
+@media(max-width:900px){.grid{grid-template-columns:repeat(2,1fr)}.chart-wrap{grid-template-columns:1fr}}
+@media(max-width:560px){.grid{grid-template-columns:1fr}main{padding:16px}}
+.modal{position:fixed;inset:0;background:#000000aa;display:none;align-items:center;justify-content:center;padding:20px;z-index:1000}
+.modal.open{display:flex}
+.modal-panel{width:min(760px,100%);max-height:90vh;overflow:auto;background:linear-gradient(180deg,#122331,#0d1a26);border:1px solid var(--line);border-radius:16px;padding:20px;box-shadow:0 20px 60px #00000066}
+.modal-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px}
+.modal-head h2{margin:0}
+.close-btn{background:transparent;border:1px solid var(--line);color:var(--muted)}
+.close-btn:hover{color:var(--red);border-color:var(--red)}
+.modal .form{margin-top:8px}
+</style>
+</head>
+<body>
+<main>
+<header>
+<div>
+<div class="eyebrow">RelayLoop · Project Progress Dashboard</div>
+<h1>Delivery, validation, and correction tracker</h1>
+<div class="sub" id="updated">Loading project state…</div>
+</div>
+<div class="actions">
+<button onclick="location.href='/'">Main Dashboard</button>
+<button onclick="refresh()">Refresh</button>
+</div>
+</header>
+
+<section class="grid">
+<article class="card"><div class="label">Milestones</div><div class="value" id="mTotal">0</div><div class="sub" id="mDetail">0 done · 0 active · 0 pending</div></article>
+<article class="card"><div class="label">Jobs</div><div class="value" id="jTotal">0</div><div class="sub" id="jDetail">0 done · 0 active · 0 pending</div></article>
+<article class="card"><div class="label">Tests</div><div class="value" id="tTotal">0</div><div class="sub" id="tDetail">0 pass · 0 fail</div></article>
+<article class="card"><div class="label">File edits</div><div class="value" id="fTotal">0</div><div class="sub" id="fDetail">Detected by live file watcher</div></article>
+</section>
+
+<section class="grid">
+<article class="card">
+<h2>Milestone status</h2>
+<div class="chart-wrap">
+<div class="pie" id="milestonePie"></div>
+<div class="legend" id="milestoneLegend"></div>
+</div>
+</article>
+<article class="card">
+<h2>Test results</h2>
+<div id="testBars"></div>
+</article>
+<article class="card">
+<h2>Job status</h2>
+<div id="jobBars"></div>
+</article>
+<article class="card">
+<h2>Most edited files</h2>
+<div id="fileBars"></div>
+</article>
+</section>
+
+<section class="section card">
+<h2>Milestones</h2>
+<div class="table-wrap">
+<table>
+<thead><tr><th>Priority</th><th>Move</th><th>ID</th><th>Title</th><th>Status</th><th>Description</th><th>Updated</th></tr></thead>
+<tbody id="milestoneTable"></tbody>
+</table>
+</div>
+</section>
+
+<section class="section card">
+<h2>Jobs and upgrades</h2>
+<div class="table-wrap">
+<table>
+<thead><tr><th>Priority</th><th>Move</th><th>ID</th><th>Title</th><th>Kind</th><th>Status</th><th>Files</th><th>Intended</th><th>Result</th><th>Time</th></tr></thead>
+<tbody id="jobTable"></tbody>
+</table>
+</div>
+</section>
+
+<section class="section card">
+<h2>Validation runs</h2>
+<div class="table-wrap">
+<table>
+<thead><tr><th>Test</th><th>Status</th><th>Details</th><th>Time</th></tr></thead>
+<tbody id="testTable"></tbody>
+</table>
+</div>
+</section>
+
+<section class="section card">
+<h2>Recent file changes</h2>
+<div class="table-wrap">
+<table>
+<thead><tr><th>Path</th><th>Status</th><th>Detected</th></tr></thead>
+<tbody id="fileTable"></tbody>
+</table>
+</div>
+</section>
+
+<section class="section card">
+<h2>Correction log</h2>
+<div class="table-wrap">
+<table>
+<thead><tr><th>Target</th><th>Reason</th><th>Time</th></tr></thead>
+<tbody id="correctionTable"></tbody>
+</table>
+</div>
+</section>
+
+<section class="section card">
+<h2>AI agent guidelines (primary)</h2>
+<div class="sub">Record the milestone before work, keep status current, validate before marking done, and record corrections instead of silently changing history.</div>
+<ol style="margin:10px 0 0 18px;line-height:1.7">
+<li>Create or update the milestone/job with intended scope and priority before editing files.</li>
+<li>Use <code>in_progress</code> while working; the file watcher records edits automatically.</li>
+<li>Run validation/tests before marking <code>done</code>.</li>
+<li>If a prior milestone or job was wrong, add a correction entry and mark the target <code>corrected</code>.</li>
+<li>Keep priority numeric (lower number = higher priority).</li>
+</ol>
+</section>
+
+<section class="section card">
+<div class="modal-head"><h2>Manage milestones</h2><button onclick="openMilestoneModal()">Add / edit milestone</button></div>
+<div class="sub">Click a milestone row to edit it in a popup. Lower priority number means higher priority.</div>
+<div class="sub" id="m_msg"></div>
+</section>
+
+<section class="section card">
+<div class="modal-head"><h2>Manage jobs</h2><button onclick="openJobModal()">Add / edit job</button></div>
+<div class="sub">Click a job row to edit it in a popup.</div>
+<div class="sub" id="j_msg"></div>
+</section>
+
+<section class="section card">
+<h2>Record correction</h2>
+<div class="form" style="grid-template-columns:repeat(3,minmax(0,1fr))">
+<label>Target type<select id="c_type"><option value="milestone">milestone</option><option value="job">job</option></select></label>
+<label>Target ID<input id="c_target"></label>
+<label>Reason<input id="c_reason"></label>
+</div>
+<div class="actions" style="margin-top:10px"><button onclick="saveCorrection()">Record correction</button></div>
+<div class="sub" id="c_msg"></div>
+</section>
+
+<section class="section card">
+<h2>Activity timeline</h2>
+<div class="timeline" id="timeline"></div>
+</section>
+</main>
+
+<div id="milestoneModal" class="modal">
+<div class="modal-panel">
+<div class="modal-head"><h2>Milestone editor</h2><button class="close-btn" onclick="closeMilestoneModal()">Close</button></div>
+<div class="form" style="grid-template-columns:repeat(4,minmax(0,1fr))">
+<label>ID<input id="m_id" placeholder="auto"></label>
+<label>Title<input id="m_title"></label>
+<label>Status<select id="m_status"><option>pending</option><option>in_progress</option><option>done</option><option>corrected</option></select></label>
+<label>Priority<input id="m_priority" type="number" value="5"></label>
+</div>
+<label>Description<textarea id="m_desc" style="width:100%;min-height:80px;background:#09121c;color:var(--text);border:1px solid var(--line);border-radius:8px;padding:8px"></textarea></label>
+<div class="actions" style="margin-top:12px"><button onclick="saveMilestone()">Save milestone</button></div>
+<div class="sub" id="m_modal_msg"></div>
+</div>
+</div>
+
+<div id="jobModal" class="modal">
+<div class="modal-panel">
+<div class="modal-head"><h2>Job editor</h2><button class="close-btn" onclick="closeJobModal()">Close</button></div>
+<div class="form" style="grid-template-columns:repeat(4,minmax(0,1fr))">
+<label>ID<input id="j_id" placeholder="auto"></label>
+<label>Title<input id="j_title"></label>
+<label>Kind<input id="j_kind" value="edit"></label>
+<label>Status<select id="j_status"><option>pending</option><option>in_progress</option><option>done</option><option>failed</option><option>corrected</option></select></label>
+</div>
+<div class="form" style="grid-template-columns:repeat(3,minmax(0,1fr))">
+<label>Priority<input id="j_priority" type="number" value="5"></label>
+<label>Files (comma)<input id="j_files"></label>
+<label>Intended<input id="j_intended"></label>
+</div>
+<label>Result<textarea id="j_result" style="width:100%;min-height:80px;background:#09121c;color:var(--text);border:1px solid var(--line);border-radius:8px;padding:8px"></textarea></label>
+<div class="actions" style="margin-top:12px"><button onclick="saveJob()">Save job</button></div>
+<div class="sub" id="j_modal_msg"></div>
+</div>
+</div>
+
+<script>
+const $ = (id) => document.getElementById(id);
+let csrf = '';
+let milestoneMap = {};
+let jobMap = {};
+let milestoneList = [];
+let jobList = [];
+async function ensureCsrf() {
+  if (csrf) return csrf;
+  const res = await fetch('/api/csrf');
+  csrf = (await res.json()).csrf;
+  return csrf;
+}
+async function postRecord(payload) {
+  await ensureCsrf();
+  const res = await fetch('/api/project/record', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'Origin': location.origin, 'X-CSRF-Token': csrf },
+    body: JSON.stringify(payload)
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error || 'Request failed');
+  return data;
+}
+function val(id) { const el = $(id); return el ? el.value.trim() : ''; }
+function openMilestoneModal(data) {
+  $('m_id').value = data?.id || '';
+  $('m_title').value = data?.title || '';
+  $('m_status').value = data?.status || 'pending';
+  $('m_priority').value = data?.priority ?? 5;
+  $('m_desc').value = data?.description || '';
+  $('m_modal_msg').textContent = '';
+  $('milestoneModal').classList.add('open');
+}
+function closeMilestoneModal() { $('milestoneModal').classList.remove('open'); }
+function openJobModal(data) {
+  $('j_id').value = data?.id || '';
+  $('j_title').value = data?.title || '';
+  $('j_kind').value = data?.kind || 'edit';
+  $('j_status').value = data?.status || 'pending';
+  $('j_priority').value = data?.priority ?? 5;
+  $('j_files').value = (data?.files || []).join(', ');
+  $('j_intended').value = data?.intended || '';
+  $('j_result').value = data?.result || '';
+  $('j_modal_msg').textContent = '';
+  $('jobModal').classList.add('open');
+}
+function closeJobModal() { $('jobModal').classList.remove('open'); }
+async function moveMilestone(id, direction) {
+  const list = [...milestoneList].sort((a, b) => (a.priority || 5) - (b.priority || 5) || String(a.id).localeCompare(String(b.id)));
+  const index = list.findIndex((item) => item.id === id);
+  const nextIndex = index + direction;
+  if (index < 0 || nextIndex < 0 || nextIndex >= list.length) return;
+  const item = list[index];
+  const neighbor = list[nextIndex];
+  const itemPriority = item.priority ?? 5;
+  const neighborPriority = neighbor.priority ?? 5;
+  const newPriority = direction < 0
+    ? (itemPriority > neighborPriority ? neighborPriority - 1 : itemPriority)
+    : (itemPriority < neighborPriority ? neighborPriority + 1 : itemPriority);
+  if (newPriority === itemPriority) return;
+  try {
+    await postRecord({ kind: 'milestone', id: item.id, title: item.title, status: item.status, priority: newPriority, description: item.description });
+    refresh();
+  } catch (error) {
+    $('m_modal_msg').textContent = error.message;
+  }
+}
+async function moveJob(id, direction) {
+  const list = [...jobList].sort((a, b) => (a.priority || 5) - (b.priority || 5) || String(a.id).localeCompare(String(b.id)));
+  const index = list.findIndex((item) => item.id === id);
+  const nextIndex = index + direction;
+  if (index < 0 || nextIndex < 0 || nextIndex >= list.length) return;
+  const item = list[index];
+  const neighbor = list[nextIndex];
+  const itemPriority = item.priority ?? 5;
+  const neighborPriority = neighbor.priority ?? 5;
+  const newPriority = direction < 0
+    ? (itemPriority > neighborPriority ? neighborPriority - 1 : itemPriority)
+    : (itemPriority < neighborPriority ? neighborPriority + 1 : itemPriority);
+  if (newPriority === itemPriority) return;
+  try {
+    await postRecord({ kind: 'job', id: item.id, title: item.title, job_kind: item.kind, status: item.status, priority: newPriority, files: item.files || [], intended: item.intended || '', result: item.result || '' });
+    refresh();
+  } catch (error) {
+    $('j_modal_msg').textContent = error.message;
+  }
+}
+async function saveMilestone() {
+  try {
+    await postRecord({
+      kind: 'milestone',
+      id: val('m_id') || undefined,
+      title: val('m_title') || 'Untitled milestone',
+      status: val('m_status') || 'pending',
+      priority: parseInt(val('m_priority') || '5', 10),
+      description: val('m_desc')
+    });
+    $('m_modal_msg').textContent = 'Milestone saved.';
+    refresh();
+  } catch (error) {
+    $('m_modal_msg').textContent = error.message;
+  }
+}
+async function saveCorrection() {
+  try {
+    await postRecord({
+      kind: 'correction',
+      target_type: val('c_type'),
+      target_id: val('c_target'),
+      reason: val('c_reason')
+    });
+    $('c_msg').textContent = 'Correction recorded.';
+    refresh();
+  } catch (error) {
+    $('c_msg').textContent = error.message;
+  }
+}
+async function saveJob() {
+  try {
+    await postRecord({
+      kind: 'job',
+      id: val('j_id') || undefined,
+      title: val('j_title') || 'Untitled job',
+      job_kind: val('j_kind') || 'edit',
+      status: val('j_status') || 'pending',
+      priority: parseInt(val('j_priority') || '5', 10),
+      files: val('j_files').split(',').map((item) => item.trim()).filter(Boolean),
+      intended: val('j_intended'),
+      result: val('j_result')
+    });
+    $('j_modal_msg').textContent = 'Job saved.';
+    refresh();
+  } catch (error) {
+    $('j_modal_msg').textContent = error.message;
+  }
+}
+function badge(status){ return `<span class="badge ${status}">${status.replace('_',' ')}</span>`; }
+function shortTime(value){ return value ? String(value).replace('T',' ').slice(0,19) : '—'; }
+function countBy(items,key){ const out={}; for(const item of items) out[item[key]] = (out[item[key]]||0)+1; return out; }
+function barRows(container, entries, color){
+  container.innerHTML = entries.map(([label,value,total]) => {
+    const pct = total ? Math.round(value/total*100) : 0;
+    return `<div class="bar-row"><div>${label}</div><div class="bar"><span style="width:${pct}%;background:${color}"></span></div><div>${value}</div></div>`;
+  }).join('') || '<div class="sub">No data yet.</div>';
+}
+async function refresh(){
+  const res = await fetch('/api/project');
+  const data = await res.json();
+  (data.milestones || []).sort((a, b) => (a.priority || 5) - (b.priority || 5) || String(a.id).localeCompare(String(b.id)));
+  (data.jobs || []).sort((a, b) => (a.priority || 5) - (b.priority || 5) || String(a.id).localeCompare(String(b.id)));
+  const s = data.summary || {};
+  $('updated').textContent = `Last updated: ${shortTime(data.updated_at)} · ${data.project || 'RelayLoop'}`;
+  $('mTotal').textContent = s.milestones?.total || 0;
+  $('mDetail').textContent = `${s.milestones?.done||0} done · ${s.milestones?.in_progress||0} active · ${s.milestones?.pending||0} pending`;
+  $('jTotal').textContent = s.jobs?.total || 0;
+  $('jDetail').textContent = `${s.jobs?.done||0} done · ${s.jobs?.in_progress||0} active · ${s.jobs?.pending||0} pending`;
+  $('tTotal').textContent = s.tests?.total || 0;
+  $('tDetail').textContent = `${s.tests?.pass||0} pass · ${s.tests?.fail||0} fail`;
+  $('fTotal').textContent = s.file_changes || 0;
+
+  const m = s.milestones || {};
+  const total = Math.max(1, m.total || 1);
+  const done = m.done || 0;
+  const active = m.in_progress || 0;
+  const pending = m.pending || 0;
+  const corrected = m.corrected || 0;
+  const doneEnd = done/total*100;
+  const activeEnd = doneEnd + active/total*100;
+  const pendingEnd = activeEnd + pending/total*100;
+  $('milestonePie').style.background = `conic-gradient(var(--green) 0 ${doneEnd}%, var(--amber) ${doneEnd}% ${activeEnd}%, var(--violet) ${activeEnd}% ${pendingEnd}%, var(--red) ${pendingEnd}% 100%)`;
+  $('milestoneLegend').innerHTML = [
+    ['Done',done,'var(--green)'], ['In progress',active,'var(--amber)'], ['Pending',pending,'var(--violet)'], ['Corrected',corrected,'var(--red)']
+  ].map(([name,value,color]) => `<div class="legend-row"><span class="dot" style="background:${color}"></span><span>${name}</span><strong>${value}</strong></div>`).join('');
+
+  barRows($('testBars'), [['Pass', s.tests?.pass||0, Math.max(1,s.tests?.total||1)], ['Fail', s.tests?.fail||0, Math.max(1,s.tests?.total||1)]], 'var(--cyan)');
+  barRows($('jobBars'), [['Done', s.jobs?.done||0, Math.max(1,s.jobs?.total||1)], ['Active', s.jobs?.in_progress||0, Math.max(1,s.jobs?.total||1)], ['Pending', s.jobs?.pending||0, Math.max(1,s.jobs?.total||1)], ['Failed', s.jobs?.failed||0, Math.max(1,s.jobs?.total||1)]], 'var(--amber)');
+
+  const fileCounts = {};
+  for (const c of data.recent_file_changes || []) fileCounts[c.path] = (fileCounts[c.path]||0)+1;
+  const topFiles = Object.entries(fileCounts).sort((a,b)=>b[1]-a[1]).slice(0,8);
+  const fileTotal = topFiles.reduce((n,x)=>n+x[1],0) || 1;
+  barRows($('fileBars'), topFiles.map(([p,n])=>[p.split('/').pop(), n, fileTotal]), 'var(--violet)');
+
+  milestoneMap = Object.fromEntries((data.milestones || []).map((m) => [m.id, m]));
+  milestoneList = [...(data.milestones || [])].sort((a, b) => (a.priority || 5) - (b.priority || 5) || String(a.id).localeCompare(String(b.id)));
+  $('milestoneTable').innerHTML = (data.milestones||[]).map(m =>
+    `<tr data-id="${m.id}" style="cursor:pointer"><td>${m.priority ?? 5}</td><td><button onclick="event.stopPropagation();moveMilestone('${m.id}',-1)">▲</button><button onclick="event.stopPropagation();moveMilestone('${m.id}',1)">▼</button></td><td>${m.id}</td><td>${m.title}</td><td>${badge(m.status)}</td><td>${m.description||''}</td><td>${shortTime(m.updated_at||m.created_at)}</td></tr>`).join('') || '<tr><td colspan="7">No milestones.</td></tr>';
+  jobList = [...(data.jobs || [])].sort((a, b) => (a.priority || 5) - (b.priority || 5) || String(a.id).localeCompare(String(b.id)));
+  jobMap = Object.fromEntries((data.jobs || []).map((j) => [j.id, j]));
+  $('jobTable').innerHTML = (data.jobs||[]).map(j =>
+    `<tr data-id="${j.id}" style="cursor:pointer"><td>${j.priority ?? 5}</td><td><button onclick="event.stopPropagation();moveJob('${j.id}',-1)">▲</button><button onclick="event.stopPropagation();moveJob('${j.id}',1)">▼</button></td><td>${j.id}</td><td>${j.title}</td><td>${j.kind}</td><td>${badge(j.status)}</td><td>${(j.files||[]).join(', ')||'—'}</td><td>${j.intended||''}</td><td>${j.result||''}</td><td>${shortTime(j.timestamp)}</td></tr>`).join('') || '<tr><td colspan="10">No jobs.</td></tr>';
+  $('testTable').innerHTML = (data.tests||[]).map(t =>
+    `<tr><td>${t.name}</td><td>${badge(t.status)}</td><td>${t.details||''}</td><td>${shortTime(t.timestamp)}</td></tr>`).join('') || '<tr><td colspan="4">No tests.</td></tr>';
+  $('fileTable').innerHTML = (data.recent_file_changes||[]).slice(0,40).map(c =>
+    `<tr><td>${c.path}</td><td>${c.status}</td><td>${shortTime(c.detected_at)}</td></tr>`).join('') || '<tr><td colspan="3">No file changes detected yet.</td></tr>';
+  $('correctionTable').innerHTML = (data.corrections||[]).map(c =>
+    `<tr><td>${c.target_type} ${c.target_id}</td><td>${c.reason}</td><td>${shortTime(c.timestamp)}</td></tr>`).join('') || '<tr><td colspan="3">No corrections recorded.</td></tr>';
+  $('timeline').innerHTML = (data.recent_events||[]).map(e =>
+    `<div class="event"><div class="time">${shortTime(e.timestamp)}</div><strong>${e.kind}</strong> · ${e.title}<div class="sub">${e.details||''}</div></div>`).join('') || '<div class="sub">No events yet.</div>';
+}
+document.addEventListener('click', (event) => {
+  const milestoneRow = event.target.closest('#milestoneTable tr[data-id]');
+  if (milestoneRow) {
+    const m = milestoneMap[milestoneRow.dataset.id];
+    if (m) openMilestoneModal(m);
+  }
+  const jobRow = event.target.closest('#jobTable tr[data-id]');
+  if (jobRow) {
+    const j = jobMap[jobRow.dataset.id];
+    if (j) openJobModal(j);
+  }
+});
+['milestoneModal','jobModal'].forEach((id) => {
+  const modal = $(id);
+  if (modal) modal.addEventListener('click', (event) => { if (event.target === modal) modal.classList.remove('open'); });
+});
+refresh();
+setInterval(refresh,5000);
+</script>
+</body>
+</html>
