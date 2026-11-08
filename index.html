@@ -198,8 +198,8 @@ function render(data) {
   $('start').disabled = locked || pairBusy;
   $('refresh_run').disabled = active || pairBusy;
   $('stop').disabled = !active || pairBusy;
-  $('save').disabled = locked || pairBusy;
-  $('verify').disabled = locked || pairDraft || pairBusy;
+  if ($('save')) $('save').disabled = locked || pairBusy;
+  if ($('verify')) $('verify').disabled = locked || pairDraft || pairBusy;
   if (!dirty) {
     if ($('planner_url')) $('planner_url').value = data.settings.planner_url || '';
     if ($('worker_session')) $('worker_session').value = data.settings.worker_session || '';
@@ -321,6 +321,17 @@ function renderActivePairs(pairsStatus) {
     stopBtn.disabled = !running;
     stopBtn.onclick = async () => { await post('/api/stop', {pair_id: pair.id}); await refresh(); };
     actions.append(selectBtn, startBtn, stopBtn);
+    if (pair.unresolved || pair.phase === 'planner_timeout' || pair.phase === 'worker_prompt_unavailable') {
+      const releaseBtn = document.createElement('button');
+      releaseBtn.textContent = 'Release';
+      releaseBtn.disabled = pairBusy;
+      releaseBtn.onclick = async () => {
+        if (!confirm('Release the hold for this pair and resume its current turn? The unresolved delivery is abandoned and may be duplicated.')) return;
+        await post('/api/pairs/release', {pair_id: pair.id});
+        await refresh();
+      };
+      actions.append(releaseBtn);
+    }
     card.append(head, meta, actions);
     list.append(card);
   }
@@ -372,6 +383,19 @@ function renderPairsList() {
       $('profile_name').focus();
     };
     actions.append(selectBtn, editBtn);
+    const pairStatus = (typeof lastPairsStatus !== 'undefined' ? (lastPairsStatus || []) : []).find((p) => p.id === profile.id);
+    if (pairStatus && (pairStatus.unresolved || pairStatus.phase === 'planner_timeout' || pairStatus.phase === 'worker_prompt_unavailable')) {
+      const releaseBtn = document.createElement('button');
+      releaseBtn.type = 'button';
+      releaseBtn.textContent = 'Release';
+      releaseBtn.disabled = pairBusy;
+      releaseBtn.onclick = async () => {
+        if (!confirm('Release the hold for this pair and resume its current turn? The unresolved delivery is abandoned and may be duplicated.')) return;
+        await post('/api/pairs/release', {pair_id: profile.id});
+        await refresh();
+      };
+      actions.append(releaseBtn);
+    }
     card.append(head, meta, actions);
     list.append(card);
   }
@@ -428,21 +452,21 @@ async function refresh() {
 }
 
 async function post(path, data = {}) {
-  const buttons = [$('refresh_run'), $('start'), $('stop'), $('save'), $('verify')];
+  const buttons = [$('refresh_run'), $('start'), $('stop'), $('save'), $('verify')].filter(Boolean);
   pairBusy = true; renderProfiles();
   buttons.forEach((button) => { button.disabled = true; });
-  $('message').textContent = 'Working…';
+  if ($('message')) $('message').textContent = 'Working…';
   try {
     const response = await fetch(path, { method: 'POST', headers: {
       'Content-Type': 'application/json', 'X-CSRF-Token': csrf, 'Origin': location.origin,
     }, body: JSON.stringify(data) });
     const result = await response.json();
-    $('message').textContent = result.error || result.warning || (result.ok ? 'Completed.' : 'Request completed.');
+    if ($('message')) $('message').textContent = result.error || result.warning || (result.ok ? 'Completed.' : 'Request completed.');
     if (result.field_errors) { const fields = {name:['profile_name','name_error'],planner_url:['profile_planner','planner_error'],worker_session:['profile_worker','worker_error']}; for (const [key,message] of Object.entries(result.field_errors)) { const [input,error] = fields[key] || []; if (input) { setPairError(input,error,message); focusAfterPost ||= input; } } }
     if (path === '/api/settings' && result.ok) dirty = false;
     await refresh();
     return result.ok ? result : null;
-  } catch (error) { $('message').textContent = String(error); }
+  } catch (error) { if ($('message')) $('message').textContent = String(error); }
   finally { await refresh(); pairBusy = false; await refresh(); if (focusAfterPost) { const input = $(focusAfterPost); if (!input.disabled) input.focus(); focusAfterPost = null; } }
 }
 

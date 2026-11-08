@@ -380,6 +380,51 @@ class RelayRunner:
             self._event("stop", "Automation stopped gracefully")
             return {"ok": True, "status": "stopped"}
 
+    def release_hold(self):
+        """Release an ambiguous hold and resume the same turn.
+
+        Preserves last planner/worker IDs, expected speaker, activity, and
+        confirmed delivery. The delivery that created the hold is abandoned —
+        restarting the turn may duplicate it.
+        """
+        with self.lock:
+            held = self.state.get("unresolved")
+            if not held:
+                return {"ok": True, "released": False, "status": "running" if self.running else "stopped"}
+            operation_id = held.get("operation_id")
+            self.state["unresolved"] = None
+            self.state["pending"] = None
+            self.state["prompt_recovery_attempted"] = False
+            expected = self.state.get("expected_speaker") or "planner"
+            if expected == "planner":
+                self.state["phase"] = "waiting_for_planner"
+                self.state["planner_wait_deadline"] = time.time() + self.planner_wait_timeout
+            else:
+                self.state["phase"] = "waiting_for_worker"
+                self.state["planner_wait_deadline"] = None
+            self._event("release", f"Released hold {operation_id}; resuming {expected} turn")
+            thread_alive = self.running and self.thread is not None and self.thread.is_alive()
+            if thread_alive:
+                # Loop is still alive (e.g. held while waiting); wake it.
+                return {"ok": True, "released": True, "status": "running", "operation_id": operation_id}
+            # Thread is dead (error break released the lock): start a new loop
+            # from the current turn without baselining or clearing history.
+            lock_key = hashlib.sha256(f"{self.planner_url}\0{self.worker_session}".encode()).hexdigest()[:16]
+            lock_path = self.runtime / f"automation.{lock_key}.lock"
+            lock_path.parent.mkdir(parents=True, exist_ok=True, mode=0o700)
+            self._lock_fd = os.open(lock_path, os.O_CREAT | os.O_RDWR, 0o600)
+            try:
+                fcntl.flock(self._lock_fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
+            except BlockingIOError:
+                os.close(self._lock_fd)
+                self._lock_fd = None
+                raise RuntimeError("Another RelayLoop automation loop already owns this pair")
+            self.stop_event.clear()
+            self.running = True
+            self.thread = threading.Thread(target=self._loop, name="relayloop-relay", daemon=True)
+            self.thread.start()
+            return {"ok": True, "released": True, "status": "running", "operation_id": operation_id}
+
     def _loop(self):
         try:
             while not self.stop_event.is_set():

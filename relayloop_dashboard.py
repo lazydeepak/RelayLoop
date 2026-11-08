@@ -574,6 +574,12 @@ class App:
             return {"ok": True, "settings": self.settings}
 
 
+    def release_pair(self, pair_id=None):
+        pair_id = pair_id or self.selected_pair_id
+        relay = self._relay_for_pair(pair_id)
+        return relay.release_hold()
+
+
     def verify(self, data=None):
         try:
             self._ensure_unlocked(check_busy=False)
@@ -683,6 +689,7 @@ class Handler(BaseHTTPRequestHandler):
             if path == "/api/settings": result = {"ok": True, "settings": self.app().save(data)}
             elif path == "/api/pairs/save": result = self.app().save_pair(data)
             elif path == "/api/pairs/select": result = self.app().select_pair(data.get("id"))
+            elif path == "/api/pairs/release": result = self.app().release_pair(data.get("pair_id") or data.get("id"))
             elif path == "/api/project/record": result = self.app().record_project(data)
             elif path in ("/api/start", "/api/stop", "/api/verify", "/api/refresh"): result = self.app().mutate(path.rsplit("/", 1)[1], data)
             else: return self.json(404, {"error": "not found"})
