@@ -630,6 +630,10 @@ class Handler(BaseHTTPRequestHandler):
             body = (ROOT / "index.html").read_bytes(); self.send_response(200)
             self.send_header("Content-Type", "text/html; charset=utf-8"); self.send_header("Content-Length", str(len(body)))
             self.end_headers(); self.wfile.write(body); return
+        if path == "/relayloop.css":
+            body = (ROOT / "relayloop.css").read_bytes(); self.send_response(200)
+            self.send_header("Content-Type", "text/css; charset=utf-8"); self.send_header("Content-Length", str(len(body)))
+            self.end_headers(); self.wfile.write(body); return
         if path in ("/project", "/project-dashboard", "/project_dashboard.html"):
             page = ROOT / "project_dashboard.html"
             if page.exists():
