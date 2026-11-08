@@ -5,6 +5,7 @@
 <div class="section-label">What is happening</div>
 <button class="sidebar-fold-toggle" id="foldBtn" type="button"><span class="icon">◀</span><span class="nav-label">Fold navigation</span></button>
 <button data-page="overview" class="active"><span class="icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg></span><span class="nav-label">Overview</span></button>
+<button data-page="activities"><span class="icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg></span><span class="nav-label">Activities</span></button>
 <button data-page="project"><span class="icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3h18v18H3z"/><path d="M3 9h18M9 3v18"/></svg></span><span class="nav-label">Project Dashboard</span></button>
 <div class="section-label">Where I work</div>
 <button data-page="pairs"><span class="icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></span><span class="nav-label">Pairs</span></button>
@@ -17,8 +18,9 @@
 <section class="layout">
 <article class="card full"><div class="label">Active pairs</div><div class="sub">All saved pairs with live relay state. Multiple pairs can run concurrently.</div><div id="active_pairs" class="pairs-list mt-12"></div></article>
 <section class="card live" aria-labelledby="live-title"><div class="live-head"><h2 id="live-title">Live Run</h2><span class="label">Observed status</span></div><div class="track" role="group" aria-label="Planner to Worker to Planner handoff track"><span class="node" id="planner_node">Planner<span class="expected-tag" id="planner_expected" hidden>Expected</span></span><div class="track-segment"><span class="arrow" id="arrow_out" aria-hidden="true">→</span><span class="track-badge" id="out_badge">Idle</span></div><span class="node" id="worker_node">Worker<span class="expected-tag" id="worker_expected" hidden>Expected</span></span><div class="track-segment"><span class="arrow" id="arrow_back" aria-hidden="true">→</span><span class="track-badge" id="back_badge">Idle</span></div><span class="node" id="planner_return">Planner</span></div><div class="track-note" id="handoff_note" role="status">Transport idle; no confirmed handoff observed.</div><div class="live-grid"><article class="live-state"><div class="label">Planner</div><div class="value" id="planner_state">Unknown</div><div class="sub" id="planner_detail">Planner state is not exposed.</div><div class="estimate" id="planner_estimate">UI-observed estimate: —</div></article><article class="live-state"><div class="label">Worker</div><div class="value" id="worker_state">Unknown</div><div class="sub" id="worker_detail">Worker readiness is not exposed.</div><div class="estimate" id="worker_estimate">UI-observed estimate: —</div></article><article class="live-state"><div class="label">Extraction</div><div class="value" id="extract_state">Idle</div><div class="estimate" id="extract_estimate">UI-observed estimate: —</div></article><article class="live-state"><div class="label">Transport</div><div class="value" id="transport_state">Idle</div><div class="estimate" id="transport_estimate">UI-observed estimate: —</div></article><article class="live-state"><div class="label">Automation</div><div class="value state" id="status">Stopped</div><div class="sub" id="health">Automation does not start automatically.</div><div class="sub" id="runtime">Elapsed: —</div></article><article class="live-state"><div class="label">Relay phase</div><div class="value" id="turn">Planner</div><div class="sub" id="turnsub">Waiting for a fresh completed assistant message.</div></article><article class="live-state"><div class="label">Extraction detail</div><div class="value" id="extraction">Idle</div><div class="sub" id="lastplanner">No message consumed yet.</div></article><article class="live-state"><div class="label">Delivery</div><div class="value" id="delivery">No pending delivery</div><div class="sub" id="lastworker">No confirmed turn yet.</div></article><article class="live-state"><div class="label">Errors</div><div class="value" id="errors">None reported</div></article></div><div class="sub" id="planner_countdown"></div></section>
-<article class="card timeline full"><div class="label">Recent activity</div><div class="timeline-scroll"><div class="timeline-head" aria-hidden="true"><span>Timestamp</span><span>Event</span><span>Direction</span><span>Duration</span><span>Outcome</span></div><ol id="timeline"><li><span>—</span><b>Ready</b><span>Verify connections, then explicitly start automation.</span></li></ol></div></article>
+<article class="card timeline full"><div class="label">Recent activity (latest 5)</div><div class="timeline-scroll"><div class="timeline-head" aria-hidden="true"><span>Timestamp</span><span>Event</span><span>Direction</span><span>Duration</span><span>Outcome</span></div><ol id="timeline"><li><span>—</span><b>Ready</b><span>Verify connections, then explicitly start automation.</span></li></ol></div><div class="form-actions"><button type="button" onclick="document.querySelector('#sidebar button[data-page=activities]').click()">View all activities</button></div></article>
 </section></section>
+<section id="page-activities" class="page"><h2>Activities</h2><div class="layout"><article class="card full"><div class="label">Recent activities</div><div class="timeline-scroll"><div class="timeline-head" aria-hidden="true"><span>Timestamp</span><span>Event</span><span>Direction</span><span>Duration</span><span>Outcome</span></div><ol id="timeline_full"></ol></div></article><article class="card full"><div class="label">Terminal logs</div><div class="sub">Server log tail · <span id="terminal_path">—</span></div><pre id="terminal_logs" class="terminal-logs">Loading…</pre><div class="form-actions"><button type="button" onclick="loadTerminalLogs()">Refresh logs</button></div></article></div></section>
 <section id="page-pairs" class="page"><h2>Pairs</h2><div class="sub">Saved pairs list. Selecting a pair updates the active relay configuration.</div><div id="pairs_list" class="pairs-list mt-12"></div><section class="pair-preview mt-12" aria-label="Pair profiles"><div class="pair-head"><div class="pair-title">Create / edit pair</div></div><div class="sub">Add a new pair or edit the selected pair.</div><div class="pair-grid"><label>Select pair<select id="profile_select" aria-label="Select pair"></select></label><label>Pair name<input id="profile_name" autocomplete="off"><span class="pair-errors" id="name_error" aria-live="polite"></span></label><label>Pair ID<span class="pair-id-value" role="textbox" aria-readonly="true" aria-label="Pair ID"><span class="pair-id-placeholder" id="profile_id">Waiting for status…</span><span class="readonly-tag" aria-hidden="true">READ-ONLY</span></span></label><label>Planner URL<input id="profile_planner" autocomplete="off"><span class="pair-errors" id="planner_error" aria-live="polite"></span></label><label>Worker session ID<input id="profile_worker" autocomplete="off"><span class="pair-errors" id="worker_error" aria-live="polite"></span></label></div><div class="pair-actions"><button class="future" id="add_pair" type="button">Add Pair</button><button class="future" id="save_pair" type="button">Save Pair</button><button id="cancel_pair" type="button" hidden>Cancel draft</button><button id="discard_pair" type="button" hidden>Discard edits</button><span class="pair-note" id="pair_note">Saved locally · selected pair is used by Verify and Start.</span></div></section></section>
 <section id="page-connections" class="page"><h2>Connections</h2><div class="sub">Planner URL and Worker session configuration.</div></section>
 <section id="page-settings" class="page"><h2>Settings</h2><div class="layout"><article class="card"><div class="label">Appearance</div><div class="form form-narrow"><label>Color profile<select id="theme_select"><option value="system">System</option><option value="dark">Dark</option><option value="light">Light</option></select></label></div><div class="sub">Saved locally in this browser.</div></article><article class="card"><div class="label">Runtime &amp; service</div><div class="sub">Runtime: <span id="settings_runtime">—</span></div><div class="sub">Dashboard port: <span id="settings_port">—</span></div><div class="sub">Adapter dir: <span id="settings_adapter">—</span></div><div class="sub">Service: <span id="settings_service">—</span></div><div class="sub">Loopback-only · configuration only is saved · session state is disposable</div></article><article class="card"><div class="label">Project Dashboard</div><div class="sub">Milestones, file changes, tests, corrections.</div><div class="actions mt-12"><button onclick="window.open('/project-dashboard','_blank')">Project Dashboard</button></div></article></div></section>
@@ -212,7 +214,9 @@ function render(data) {
   if ($('settings_service')) $('settings_service').textContent = anyRunning ? 'Active (running or on hold)' : 'Stopped';
   $('clock').textContent = data.now || '';
   const timeline = $('timeline');
+  const timelineFull = $('timeline_full');
   timeline.replaceChildren();
+  if (timelineFull) timelineFull.replaceChildren();
   const rows = (data.timeline || []).map((item, index) => {
     const text = `${item.kind || ''} ${item.message || ''}`;
     const kindText = String(item.kind || '').toLowerCase();
@@ -226,17 +230,24 @@ function render(data) {
   });
   observedTransitions.forEach((item,index) => rows.push({time:item.time||'',stamp:localTimestamp(item.time),event:`UI-observed phase: ${item.previous} → ${item.phase}`,direction:item.direction==='planner_to_worker'?'Planner → Worker':item.direction==='worker_to_planner'?'Worker → Planner':'—',duration:'—',outcome:'Observed · UI-observed',kind:'observed',source:1,index}));
   rows.sort((a,b) => (b.stamp ?? -Infinity) - (a.stamp ?? -Infinity) || a.source-b.source || a.index-b.index);
-  for (const item of rows) {
+  const makeRow = (item) => {
     const row=document.createElement('li'); row.className=item.kind;
     for (const [label,value,className] of [['Timestamp',item.time,'timestamp'],['Event',item.event,'event'],['Inferred direction',item.direction,'direction'],['Duration',item.duration,'duration'],['Outcome',item.outcome,'outcome']]) {
       const cell=document.createElement(className==='event'?'b':'span'); cell.className=className; const caption=document.createElement('span'); caption.className='timeline-cell-label'; caption.textContent=`${label}: `; cell.append(caption,document.createTextNode(value||'—')); row.append(cell);
     }
-    timeline.append(row);
-  }
+    return row;
+  };
+  for (const item of rows.slice(0, 5)) timeline.append(makeRow(item));
+  if (timelineFull) for (const item of rows) timelineFull.append(makeRow(item));
   if (!timeline.childElementCount) {
     const row = document.createElement('li');
     row.textContent = 'Ready — verify connections, then explicitly start automation.';
     timeline.append(row);
+  }
+  if (timelineFull && !timelineFull.childElementCount) {
+    const row = document.createElement('li');
+    row.textContent = 'No activities yet.';
+    timelineFull.append(row);
   }
 }
 
@@ -445,6 +456,16 @@ async function commitProfile() {
 }
 
 let lastSuccessfulRefresh = null;
+async function loadTerminalLogs() {
+  try {
+    const res = await fetch('/api/logs', { cache: 'no-store' });
+    const data = await res.json();
+    if ($('terminal_path')) $('terminal_path').textContent = data.path || '';
+    if ($('terminal_logs')) $('terminal_logs').textContent = (data.lines || []).join('\n') || '(no logs yet)';
+  } catch (e) {
+    if ($('terminal_logs')) $('terminal_logs').textContent = `Logs unavailable: ${String(e)}`;
+  }
+}
 async function refresh() {
   if (refreshing) return;
   refreshing = true;
@@ -455,6 +476,7 @@ async function refresh() {
     render(await response.json());
     lastSuccessfulRefresh = Date.now();
     if ($('status_indicator')) $('status_indicator').textContent = `Live · ${new Date().toLocaleTimeString()}`;
+    if (document.getElementById('page-activities')?.classList.contains('active')) loadTerminalLogs();
   } catch (error) {
     $('errors').textContent = String(error);
     $('errors').className = 'value error';

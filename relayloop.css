@@ -79,6 +79,7 @@ header.top{position:sticky;top:-20px;z-index:20;background:var(--bg);margin:-20p
 .mt-12{margin-top:12px}
 .form-narrow{max-width:320px;margin-top:12px}
 .project-frame{width:100%;height:80vh;border:1px solid var(--line);border-radius:12px}
+.terminal-logs{background:var(--surface-3);border:1px solid var(--line);border-radius:8px;padding:12px;min-height:200px;max-height:360px;overflow:auto;font:12px ui-monospace,monospace;color:var(--text);white-space:pre-wrap;overflow-wrap:anywhere}
 .pairs-list{display:grid;gap:12px}
 .pair-card{border:1px solid var(--line);background:var(--panel);border-radius:10px;padding:14px;display:grid;gap:8px}
 .pair-card.selected{border-color:var(--cyan)}

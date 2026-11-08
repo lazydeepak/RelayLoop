@@ -701,6 +701,13 @@ class Handler(BaseHTTPRequestHandler):
         if path == "/api/status": return self.json(200, self.app().status())
         if path == "/api/csrf": return self.json(200, {"csrf": self.app().csrf})
         if path == "/api/project": return self.json(200, self.app().project_status())
+        if path == "/api/logs":
+            log_path = "/tmp/relayloop_dashboard.log"
+            try:
+                lines = Path(log_path).read_text(errors="ignore").splitlines()[-200:]
+                return self.json(200, {"lines": lines, "path": log_path})
+            except (FileNotFoundError, OSError):
+                return self.json(200, {"lines": [], "path": log_path})
         if path in ("/", "/index.html"):
             body = (ROOT / "index.html").read_bytes(); self.send_response(200)
             self.send_header("Content-Type", "text/html; charset=utf-8"); self.send_header("Content-Length", str(len(body)))
