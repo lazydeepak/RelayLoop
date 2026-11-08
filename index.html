@@ -2,7 +2,7 @@
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>RelayLoop</title>
 <link rel="stylesheet" href="/relayloop.css">
 </head><body><div class="app-shell"><aside class="sidebar" id="sidebar">
-<div class="brand"><div style="width:30px;height:30px;border-radius:8px;background:linear-gradient(135deg,#4de2ff,#43d17a);display:grid;place-items:center;font-weight:700;color:#06101c">R</div><div><div class="brand-title">RelayLoop</div><div class="brand-sub">Secure command center</div></div></div>
+<div class="brand"><div class="brand-mark">R</div><div><div class="brand-title">RelayLoop</div><div class="brand-sub">Secure command center</div></div></div>
 <div class="section-label">What is happening</div>
 <button class="sidebar-fold-toggle" id="foldBtn" type="button"><span class="icon">◀</span><span class="nav-label">Fold navigation</span></button>
 <button data-page="overview" class="active"><span class="icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg></span><span class="nav-label">Overview</span></button>
@@ -24,10 +24,10 @@
 <article class="card wide"><div class="label">Errors</div><div class="value" id="errors">None reported</div></article>
 <article class="card timeline full"><div class="label">Recent activity</div><div class="timeline-scroll"><div class="timeline-head" aria-hidden="true"><span>Timestamp</span><span>Event</span><span>Direction</span><span>Duration</span><span>Outcome</span></div><ol id="timeline"><li><span>—</span><b>Ready</b><span>Verify connections, then explicitly start automation.</span></li></ol></div></article>
 </section></section>
-<section id="page-pairs" class="page"><h2>Pairs</h2><div class="sub">Manage saved pair profiles. Selecting a pair updates the active relay configuration.</div><div class="pair-preview" style="margin-top:12px"><div class="pair-grid"><label>Select pair<select id="page_pair_select"></select></label></div><div class="pair-actions"><button onclick="window.location.hash='overview'">Open full connections</button></div></div></section>
+<section id="page-pairs" class="page"><h2>Pairs</h2><div class="sub">Manage saved pair profiles. Selecting a pair updates the active relay configuration.</div><div class="pair-preview mt-12"><div class="pair-grid"><label>Select pair<select id="page_pair_select"></select></label></div><div class="pair-actions"><button onclick="window.location.hash='overview'">Open full connections</button></div></div></section>
 <section id="page-connections" class="page"><h2>Connections</h2><div class="sub">Planner URL and Worker session configuration.</div></section>
-<section id="page-settings" class="page"><h2>Settings</h2><div class="sub">Runtime: <span id="settings_runtime">—</span></div><div class="sub">Dashboard port: <span id="settings_port">—</span></div><div class="form" style="max-width:320px;margin-top:12px"><label>Color profile<select id="theme_select"><option value="system">System</option><option value="dark">Dark</option><option value="light">Light</option></select></label></div><div class="actions" style="margin-top:12px"><button onclick="window.open('/project-dashboard','_blank')">Project Dashboard</button></div></section>
-<section id="page-project" class="page"><h2>Project Dashboard</h2><iframe src="/project-dashboard" style="width:100%;height:80vh;border:1px solid var(--line);border-radius:12px"></iframe></section>
+<section id="page-settings" class="page"><h2>Settings</h2><div class="sub">Runtime: <span id="settings_runtime">—</span></div><div class="sub">Dashboard port: <span id="settings_port">—</span></div><div class="form form-narrow"><label>Color profile<select id="theme_select"><option value="system">System</option><option value="dark">Dark</option><option value="light">Light</option></select></label></div><div class="actions mt-12"><button onclick="window.open('/project-dashboard','_blank')">Project Dashboard</button></div></section>
+<section id="page-project" class="page"><h2>Project Dashboard</h2><iframe src="/project-dashboard" class="project-frame"></iframe></section>
 <footer>Loopback-only · configuration only is saved · session state is disposable · no historical replay</footer></main></div>
 <script>
 let csrf = '';

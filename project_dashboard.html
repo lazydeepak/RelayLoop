@@ -53,6 +53,13 @@ button:hover{border-color:var(--cyan);color:var(--cyan)}
 .close-btn{background:transparent;border:1px solid var(--line);color:var(--muted)}
 .close-btn:hover{color:var(--red);border-color:var(--red)}
 .modal .form{margin-top:8px}
+.guidelines-list{margin:10px 0 0 18px;line-height:1.7}
+.form-3{grid-template-columns:repeat(3,minmax(0,1fr))}
+.form-4{grid-template-columns:repeat(4,minmax(0,1fr))}
+.textarea-block{width:100%;min-height:80px;background:#09121c;color:var(--text);border:1px solid var(--line);border-radius:8px;padding:8px}
+.actions-spaced{margin-top:10px}
+.actions-spaced-12{margin-top:12px}
+.clickable-row{cursor:pointer}
 </style>
 </head>
 <body>
@@ -151,7 +158,7 @@ button:hover{border-color:var(--cyan);color:var(--cyan)}
 <section class="section card">
 <h2>AI agent guidelines (primary)</h2>
 <div class="sub">Record the milestone before work, keep status current, validate before marking done, and record corrections instead of silently changing history.</div>
-<ol style="margin:10px 0 0 18px;line-height:1.7">
+<ol class="guidelines-list">
 <li>Create or update the milestone/job with intended scope and priority before editing files.</li>
 <li>Use <code>in_progress</code> while working; the file watcher records edits automatically.</li>
 <li>Run validation/tests before marking <code>done</code>.</li>
@@ -174,12 +181,12 @@ button:hover{border-color:var(--cyan);color:var(--cyan)}
 
 <section class="section card">
 <h2>Record correction</h2>
-<div class="form" style="grid-template-columns:repeat(3,minmax(0,1fr))">
+<div class="form form-3">
 <label>Target type<select id="c_type"><option value="milestone">milestone</option><option value="job">job</option></select></label>
 <label>Target ID<input id="c_target"></label>
 <label>Reason<input id="c_reason"></label>
 </div>
-<div class="actions" style="margin-top:10px"><button onclick="saveCorrection()">Record correction</button></div>
+<div class="actions actions-spaced"><button onclick="saveCorrection()">Record correction</button></div>
 <div class="sub" id="c_msg"></div>
 </section>
 
@@ -192,14 +199,14 @@ button:hover{border-color:var(--cyan);color:var(--cyan)}
 <div id="milestoneModal" class="modal">
 <div class="modal-panel">
 <div class="modal-head"><h2>Milestone editor</h2><button class="close-btn" onclick="closeMilestoneModal()">Close</button></div>
-<div class="form" style="grid-template-columns:repeat(4,minmax(0,1fr))">
+<div class="form form-4">
 <label>ID<input id="m_id" placeholder="auto"></label>
 <label>Title<input id="m_title"></label>
 <label>Status<select id="m_status"><option>pending</option><option>in_progress</option><option>done</option><option>corrected</option></select></label>
 <label>Priority<input id="m_priority" type="number" value="5"></label>
 </div>
-<label>Description<textarea id="m_desc" style="width:100%;min-height:80px;background:#09121c;color:var(--text);border:1px solid var(--line);border-radius:8px;padding:8px"></textarea></label>
-<div class="actions" style="margin-top:12px"><button onclick="saveMilestone()">Save milestone</button></div>
+<label>Description<textarea id="m_desc" class="textarea-block"></textarea></label>
+<div class="actions actions-spaced-12"><button onclick="saveMilestone()">Save milestone</button></div>
 <div class="sub" id="m_modal_msg"></div>
 </div>
 </div>
@@ -207,19 +214,19 @@ button:hover{border-color:var(--cyan);color:var(--cyan)}
 <div id="jobModal" class="modal">
 <div class="modal-panel">
 <div class="modal-head"><h2>Job editor</h2><button class="close-btn" onclick="closeJobModal()">Close</button></div>
-<div class="form" style="grid-template-columns:repeat(4,minmax(0,1fr))">
+<div class="form form-4">
 <label>ID<input id="j_id" placeholder="auto"></label>
 <label>Title<input id="j_title"></label>
 <label>Kind<input id="j_kind" value="edit"></label>
 <label>Status<select id="j_status"><option>pending</option><option>in_progress</option><option>done</option><option>failed</option><option>corrected</option></select></label>
 </div>
-<div class="form" style="grid-template-columns:repeat(3,minmax(0,1fr))">
+<div class="form form-3">
 <label>Priority<input id="j_priority" type="number" value="5"></label>
 <label>Files (comma)<input id="j_files"></label>
 <label>Intended<input id="j_intended"></label>
 </div>
-<label>Result<textarea id="j_result" style="width:100%;min-height:80px;background:#09121c;color:var(--text);border:1px solid var(--line);border-radius:8px;padding:8px"></textarea></label>
-<div class="actions" style="margin-top:12px"><button onclick="saveJob()">Save job</button></div>
+<label>Result<textarea id="j_result" class="textarea-block"></textarea></label>
+<div class="actions actions-spaced-12"><button onclick="saveJob()">Save job</button></div>
 <div class="sub" id="j_modal_msg"></div>
 </div>
 </div>
@@ -411,11 +418,11 @@ async function refresh(){
   milestoneMap = Object.fromEntries((data.milestones || []).map((m) => [m.id, m]));
   milestoneList = [...(data.milestones || [])].sort((a, b) => (a.priority || 5) - (b.priority || 5) || String(a.id).localeCompare(String(b.id)));
   $('milestoneTable').innerHTML = (data.milestones||[]).map(m =>
-    `<tr data-id="${m.id}" style="cursor:pointer"><td>${m.priority ?? 5}</td><td><button onclick="event.stopPropagation();moveMilestone('${m.id}',-1)">▲</button><button onclick="event.stopPropagation();moveMilestone('${m.id}',1)">▼</button></td><td>${m.id}</td><td>${m.title}</td><td>${badge(m.status)}</td><td>${m.description||''}</td><td>${shortTime(m.updated_at||m.created_at)}</td></tr>`).join('') || '<tr><td colspan="7">No milestones.</td></tr>';
+    `<tr data-id="${m.id}" class="clickable-row"><td>${m.priority ?? 5}</td><td><button onclick="event.stopPropagation();moveMilestone('${m.id}',-1)">▲</button><button onclick="event.stopPropagation();moveMilestone('${m.id}',1)">▼</button></td><td>${m.id}</td><td>${m.title}</td><td>${badge(m.status)}</td><td>${m.description||''}</td><td>${shortTime(m.updated_at||m.created_at)}</td></tr>`).join('') || '<tr><td colspan="7">No milestones.</td></tr>';
   jobList = [...(data.jobs || [])].sort((a, b) => (a.priority || 5) - (b.priority || 5) || String(a.id).localeCompare(String(b.id)));
   jobMap = Object.fromEntries((data.jobs || []).map((j) => [j.id, j]));
   $('jobTable').innerHTML = (data.jobs||[]).map(j =>
-    `<tr data-id="${j.id}" style="cursor:pointer"><td>${j.priority ?? 5}</td><td><button onclick="event.stopPropagation();moveJob('${j.id}',-1)">▲</button><button onclick="event.stopPropagation();moveJob('${j.id}',1)">▼</button></td><td>${j.id}</td><td>${j.title}</td><td>${j.kind}</td><td>${badge(j.status)}</td><td>${(j.files||[]).join(', ')||'—'}</td><td>${j.intended||''}</td><td>${j.result||''}</td><td>${shortTime(j.timestamp)}</td></tr>`).join('') || '<tr><td colspan="10">No jobs.</td></tr>';
+    `<tr data-id="${j.id}" class="clickable-row"><td>${j.priority ?? 5}</td><td><button onclick="event.stopPropagation();moveJob('${j.id}',-1)">▲</button><button onclick="event.stopPropagation();moveJob('${j.id}',1)">▼</button></td><td>${j.id}</td><td>${j.title}</td><td>${j.kind}</td><td>${badge(j.status)}</td><td>${(j.files||[]).join(', ')||'—'}</td><td>${j.intended||''}</td><td>${j.result||''}</td><td>${shortTime(j.timestamp)}</td></tr>`).join('') || '<tr><td colspan="10">No jobs.</td></tr>';
   $('testTable').innerHTML = (data.tests||[]).map(t =>
     `<tr><td>${t.name}</td><td>${badge(t.status)}</td><td>${t.details||''}</td><td>${shortTime(t.timestamp)}</td></tr>`).join('') || '<tr><td colspan="4">No tests.</td></tr>';
   $('fileTable').innerHTML = (data.recent_file_changes||[]).slice(0,40).map(c =>
