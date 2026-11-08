@@ -686,6 +686,7 @@ class RelayRunner:
 
     def _submit_and_confirm_planner(self, operation):
         deadline = time.monotonic() + self.planner_ready_timeout
+        refreshed = False
         last_wait_phase = None
         while not self.stop_event.is_set():
             readiness = self._planner_readiness(operation["text"])
@@ -753,7 +754,17 @@ class RelayRunner:
             last_wait_phase = phase
             remaining = deadline - time.monotonic()
             if remaining <= 0:
-                raise PlannerReadinessTimeout("Planner did not become ready within the ten-minute readiness window")
+                raise PlannerReadinessTimeout(f"Planner did not become ready within the ten-minute readiness window ({readiness.get('reason') or 'unknown'})")
+            # Rehydrate a stale Planner page once halfway through the wait.
+            # A frozen tab keeps the composer busy forever even when Planner
+            # is actually idle — same recovery receipt verification uses.
+            if not refreshed and remaining < self.planner_ready_timeout / 2:
+                refresh = getattr(self.adapters, "refresh_planner", None)
+                if refresh:
+                    try: refresh(self.planner_url)
+                    except Exception: pass
+                refreshed = True
+                self._event("wait", f"Planner page refreshed once during readiness wait ({readiness.get('reason') or 'stale snapshot'})", "info")
             if self.stop_event.wait(min(self.planner_ready_poll_interval, remaining)):
                 return
 
