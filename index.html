@@ -16,13 +16,13 @@
 <header class="top"><button class="hamburger-btn" id="hamburgerBtn" type="button" aria-label="Open navigation">☰</button><div><div class="eyebrow">RelayLoop · independent conversation relay</div><h1>Planner ↔ Worker</h1><div class="clock" id="clock">Local time</div><div class="sub" id="status_indicator">Loading…</div></div><div class="actions"><button id="refresh_run" type="button" title="Refresh Planner and clear held session state">Refresh</button><button id="start" type="button" title="Pause all running pairs">Global Pause</button><button id="stop" type="button" disabled title="Stop all pairs">Global Stop</button><button id="project_dashboard" type="button" onclick="window.open('/project-dashboard','_blank')" title="Open the RelayLoop project progress dashboard">Project Dashboard</button></div></header>
 <section id="page-overview" class="page active">
 <section class="layout">
-<article class="card full"><div class="label">Active pairs</div><div class="sub">All saved pairs with live relay state. Multiple pairs can run concurrently.</div><div id="active_pairs" class="pairs-list mt-12"></div></article>
+<article class="card full"><div class="label">Active pairs</div><div class="sub">All saved pairs with live relay state. Multiple pairs can run concurrently.</div><div id="active_pairs" class="pairs-list mt-12">Loading pair state…</div></article>
 <section class="card live" aria-labelledby="live-title"><div class="live-head"><h2 id="live-title">Live Run</h2><span class="label">Observed status</span></div><div class="track" role="group" aria-label="Planner to Worker to Planner handoff track"><span class="node" id="planner_node">Planner<span class="expected-tag" id="planner_expected" hidden>Expected</span></span><div class="track-segment"><span class="arrow" id="arrow_out" aria-hidden="true">→</span><span class="track-badge" id="out_badge">Idle</span></div><span class="node" id="worker_node">Worker<span class="expected-tag" id="worker_expected" hidden>Expected</span></span><div class="track-segment"><span class="arrow" id="arrow_back" aria-hidden="true">→</span><span class="track-badge" id="back_badge">Idle</span></div><span class="node" id="planner_return">Planner</span></div><div class="track-note" id="handoff_note" role="status">Transport idle; no confirmed handoff observed.</div><div class="live-grid"><article class="live-state"><div class="label">Planner</div><div class="value" id="planner_state">Unknown</div><div class="sub" id="planner_detail">Planner state is not exposed.</div><div class="estimate" id="planner_estimate">UI-observed estimate: —</div></article><article class="live-state"><div class="label">Worker</div><div class="value" id="worker_state">Unknown</div><div class="sub" id="worker_detail">Worker readiness is not exposed.</div><div class="estimate" id="worker_estimate">UI-observed estimate: —</div></article><article class="live-state"><div class="label">Extraction</div><div class="value" id="extract_state">Idle</div><div class="estimate" id="extract_estimate">UI-observed estimate: —</div></article><article class="live-state"><div class="label">Transport</div><div class="value" id="transport_state">Idle</div><div class="estimate" id="transport_estimate">UI-observed estimate: —</div></article><article class="live-state"><div class="label">Automation</div><div class="value state" id="status">Stopped</div><div class="sub" id="health">Automation does not start automatically.</div><div class="sub" id="runtime">Elapsed: —</div></article><article class="live-state"><div class="label">Relay phase</div><div class="value" id="turn">Planner</div><div class="sub" id="turnsub">Waiting for a fresh completed assistant message.</div></article><article class="live-state"><div class="label">Extraction detail</div><div class="value" id="extraction">Idle</div><div class="sub" id="lastplanner">No message consumed yet.</div></article><article class="live-state"><div class="label">Delivery</div><div class="value" id="delivery">No pending delivery</div><div class="sub" id="lastworker">No confirmed turn yet.</div></article><article class="live-state"><div class="label">Errors</div><div class="value" id="errors">None reported</div></article></div><div class="sub" id="planner_countdown"></div></section>
 <article class="card timeline full"><div class="label">Recent activity (latest 5)</div><div class="timeline-scroll"><div class="timeline-head" aria-hidden="true"><span>Timestamp</span><span>Event</span><span>Direction</span><span>Duration</span><span>Outcome</span></div><ol id="timeline"><li><span>—</span><b>Ready</b><span>Verify connections, then explicitly start automation.</span></li></ol></div><div class="form-actions"><button type="button" onclick="document.querySelector('#sidebar button[data-page=activities]').click()">View all activities</button></div></article>
 </section></section>
 <section id="page-activities" class="page"><h2>Activities</h2><div class="layout"><article class="card full"><div class="label">Recent activities</div><div class="timeline-scroll"><div class="timeline-head" aria-hidden="true"><span>Timestamp</span><span>Event</span><span>Direction</span><span>Duration</span><span>Outcome</span></div><ol id="timeline_full"></ol></div></article><article class="card full"><div class="label">Terminal logs</div><div class="sub">Server log tail · <span id="terminal_path">—</span></div><pre id="terminal_logs" class="terminal-logs">Loading…</pre><div class="form-actions"><button type="button" onclick="loadTerminalLogs()">Refresh logs</button></div></article></div></section>
 <section id="page-pairs" class="page"><h2>Pairs</h2><div class="sub">Saved pairs list. Selecting a pair updates the active relay configuration.</div><div id="pairs_list" class="pairs-list mt-12"></div><section class="pair-preview mt-12" aria-label="Pair profiles"><div class="pair-head"><div class="pair-title">Create / edit pair</div></div><div class="sub">Add a new pair or edit the selected pair.</div><div class="pair-grid"><label>Select pair<select id="profile_select" aria-label="Select pair"></select></label><label>Pair name<input id="profile_name" autocomplete="off"><span class="pair-errors" id="name_error" aria-live="polite"></span></label><label>Pair ID<span class="pair-id-value" role="textbox" aria-readonly="true" aria-label="Pair ID"><span class="pair-id-placeholder" id="profile_id">Waiting for status…</span><span class="readonly-tag" aria-hidden="true">READ-ONLY</span></span></label><label>Planner URL<input id="profile_planner" autocomplete="off"><span class="pair-errors" id="planner_error" aria-live="polite"></span></label><label>Worker session ID<input id="profile_worker" autocomplete="off"><span class="pair-errors" id="worker_error" aria-live="polite"></span></label></div><div class="pair-actions"><button class="future" id="add_pair" type="button">Add Pair</button><button class="future" id="save_pair" type="button">Save Pair</button><button id="cancel_pair" type="button" hidden>Cancel draft</button><button id="discard_pair" type="button" hidden>Discard edits</button><span class="pair-note" id="pair_note">Saved locally · selected pair is used by Verify and Start.</span></div></section></section>
-<section id="page-connections" class="page"><h2>Connections</h2><div class="sub">Planner URL and Worker session configuration.</div></section>
+<section id="page-connections" class="page"><h2>Connections</h2><div class="sub">Operational visibility for the selected pair. Configuration is managed on the Pairs page.</div><div id="connections_state" class="status-pill status-loading">Loading…</div><div id="connections_detail" class="connections-detail"><div class="sub">Loading connection details…</div></div><div id="connections_empty" class="sub" hidden>No pairs configured.</div><div id="connections_error" class="sub" hidden></div></section>
 <section id="page-settings" class="page"><h2>Settings</h2><div class="layout"><article class="card"><div class="label">Appearance</div><div class="form form-narrow"><label>Color profile<select id="theme_select"><option value="system">System</option><option value="dark">Dark</option><option value="light">Light</option></select></label></div><div class="sub">Saved locally in this browser.</div></article><article class="card"><div class="label">Runtime &amp; service</div><div class="sub">Runtime: <span id="settings_runtime">—</span></div><div class="sub">Dashboard port: <span id="settings_port">—</span></div><div class="sub">Adapter dir: <span id="settings_adapter">—</span></div><div class="sub">Service: <span id="settings_service">—</span></div><div class="sub">Loopback-only · configuration only is saved · session state is disposable</div></article><article class="card"><div class="label">Project Dashboard</div><div class="sub">Milestones, file changes, tests, corrections.</div><div class="actions mt-12"><button onclick="window.open('/project-dashboard','_blank')">Project Dashboard</button></div></article></div></section>
 <section id="page-project" class="page"><h2>Project Dashboard</h2><iframe src="/project-dashboard" class="project-frame"></iframe></section>
 <footer>Loopback-only · configuration only is saved · session state is disposable · no historical replay</footer></main></div>
@@ -102,6 +102,7 @@ function render(data) {
     previewSeeded = true;
     lastPairsStatus = data.pairs_status || [];
     renderProfiles();
+    renderConnections(data);
   }
   const phase = inferPhase(data);
   const held = data.unresolved && typeof data.unresolved === 'object' ? data.unresolved : null;
@@ -359,6 +360,94 @@ function renderActivePairs(pairsStatus) {
     list.append(empty);
   }
 }
+function renderConnectionsState() {
+  const stateEl = $('connections_state');
+  if (!stateEl) return;
+  const label = statusState === 'loading' ? 'Loading' : statusState === 'ready' ? 'Ready' : statusState === 'stale' ? 'Stale' : 'Disconnected';
+  stateEl.textContent = label;
+  stateEl.className = 'status-pill status-' + statusState;
+}
+function renderConnections(data) {
+  renderConnectionsState();
+  const root = $('connections_detail');
+  if (!root) return;
+  root.replaceChildren();
+  const emptyEl = $('connections_empty');
+  const errorEl = $('connections_error');
+  if (emptyEl) emptyEl.hidden = true;
+  if (errorEl) { errorEl.hidden = true; errorEl.textContent = ''; }
+  if (statusState === 'loading') {
+    const p = document.createElement('div'); p.className = 'sub'; p.textContent = 'Loading connection details…'; root.append(p);
+    return;
+  }
+  if (statusState === 'disconnected') {
+    if (errorEl) { errorEl.hidden = false; errorEl.textContent = 'Backend status unavailable. Retrying…'; }
+    const p = document.createElement('div'); p.className = 'sub'; p.textContent = 'No current connection data.'; root.append(p);
+    return;
+  }
+  const pairs = data?.pairs || [];
+  const selectedId = data?.selected_pair_id;
+  const selectedPair = pairs.find((p) => p.id === selectedId) || null;
+  const pairStatus = (data?.pairs_status || []).find((p) => p.id === selectedId) || null;
+  if (!pairs.length) {
+    if (emptyEl) emptyEl.hidden = false;
+    const p = document.createElement('div'); p.className = 'sub'; p.textContent = 'No pairs configured.'; root.append(p);
+    return;
+  }
+  if (!selectedPair || !pairStatus) {
+    const p = document.createElement('div'); p.className = 'sub'; p.textContent = 'Selected pair not found.'; root.append(p);
+    return;
+  }
+  const add = (label, value) => {
+    const row = document.createElement('div'); row.className = 'connections-row';
+    const k = document.createElement('span'); k.className = 'connections-key'; k.textContent = label;
+    const v = document.createElement('span'); v.className = 'connections-value'; v.textContent = value || '—';
+    row.append(k, v); root.append(row);
+  };
+  add('Pair name', selectedPair.name);
+  add('Pair ID', selectedPair.id);
+  add('Planner URL', selectedPair.planner_url);
+  add('Worker session', selectedPair.worker_session);
+  add('Automation status', pairStatus.status || 'stopped');
+  add('Phase', pairStatus.phase || 'stopped');
+  add('Expected speaker', pairStatus.expected_speaker || 'planner');
+  const wo = data.worker_observation || {};
+  add('Worker observation (Observed)', wo.state === 'unknown' ? 'Unknown' : `${wo.state || 'unknown'}${wo.latest_completed_id ? ` · last completed ${wo.latest_completed_id}` : ''}`);
+  add('Pending operation', pairStatus.pending ? `${pairStatus.pending.direction || 'unknown'} · ${pairStatus.pending.stage || 'unknown'}` : 'None');
+  add('Unresolved operation', pairStatus.unresolved ? `${pairStatus.unresolved.direction || 'unknown'} · ${pairStatus.unresolved.stage || 'unresolved'}` : 'None');
+  const lcd = data.last_confirmed_delivery;
+  add('Last confirmed delivery', lcd ? `${lcd.direction || 'unknown'} · ${lcd.confirmed_at ? new Date(lcd.confirmed_at * 1000).toLocaleString() : 'timestamp unavailable'} · ${lcd.receipt?.destination_message_id || 'receipt recorded'}` : 'None');
+  add('Errors / warnings', data.error || 'None reported');
+  const actions = document.createElement('div');
+  actions.className = 'pair-card-actions';
+  const startBtn = document.createElement('button');
+  startBtn.textContent = 'Start';
+  startBtn.disabled = pairStatus.status === 'running';
+  startBtn.onclick = async () => { await post('/api/start', {pair_id: selectedPair.id}); await refresh(); };
+  const stopBtn = document.createElement('button');
+  stopBtn.textContent = 'Stop';
+  stopBtn.disabled = pairStatus.status !== 'running';
+  stopBtn.onclick = async () => { await post('/api/stop', {pair_id: selectedPair.id}); await refresh(); };
+  actions.append(startBtn, stopBtn);
+  if (pairStatus.unresolved || pairStatus.phase === 'planner_timeout' || pairStatus.phase === 'worker_prompt_unavailable') {
+    const releaseBtn = document.createElement('button');
+    releaseBtn.textContent = 'Release';
+    releaseBtn.disabled = pairBusy;
+    releaseBtn.onclick = async () => {
+      if (!confirm('Release the hold for this pair and resume its current turn? The unresolved delivery is abandoned and may be duplicated.')) return;
+      await post('/api/pairs/release', {pair_id: selectedPair.id});
+      await refresh();
+    };
+    actions.append(releaseBtn);
+  }
+  root.append(actions);
+  if (statusState === 'stale') {
+    const note = document.createElement('div');
+    note.className = 'sub';
+    note.textContent = 'Showing stale snapshot while refreshing.';
+    root.append(note);
+  }
+}
 function renderPairsList() {
   const list = $('pairs_list');
   if (!list) return;
@@ -456,6 +545,9 @@ async function commitProfile() {
 }
 
 let lastSuccessfulRefresh = null;
+let statusState = 'loading';
+let statusRequestToken = 0;
+let lastStatus = null;
 async function loadTerminalLogs() {
   try {
     const res = await fetch('/api/logs', { cache: 'no-store' });
@@ -469,15 +561,24 @@ async function loadTerminalLogs() {
 async function refresh() {
   if (refreshing) return;
   refreshing = true;
-  if ($('status_indicator')) $('status_indicator').textContent = lastSuccessfulRefresh ? 'Loading…' : 'Loading status…';
+  const token = ++statusRequestToken;
+  if (lastStatus) statusState = 'stale';
+  if ($('status_indicator')) $('status_indicator').textContent = lastStatus ? 'Updating…' : 'Loading status…';
   try {
     const response = await fetch('/api/status', { cache: 'no-store' });
+    if (token !== statusRequestToken) return;
     if (!response.ok) throw new Error(`Status request failed (${response.status})`);
-    render(await response.json());
+    const data = await response.json();
+    if (token !== statusRequestToken) return;
+    lastStatus = data;
+    statusState = 'ready';
+    render(data);
     lastSuccessfulRefresh = Date.now();
     if ($('status_indicator')) $('status_indicator').textContent = `Live · ${new Date().toLocaleTimeString()}`;
     if (document.getElementById('page-activities')?.classList.contains('active')) loadTerminalLogs();
   } catch (error) {
+    if (token !== statusRequestToken) return;
+    statusState = 'disconnected';
     $('errors').textContent = String(error);
     $('errors').className = 'value error';
     if ($('status_indicator')) $('status_indicator').textContent = lastSuccessfulRefresh ? 'Status not loaded — retrying…' : 'Status not loaded — waiting for first response…';
@@ -515,7 +616,7 @@ $('stop').onclick = () => post('/api/stop-all');
 $('profile_select').disabled = true;
 for (const id of ['profile_name','profile_planner','profile_worker','add_pair','save_pair']) $(id).disabled = true;
 $('pair_note').textContent = 'Loading current pair from status…';
-$('profile_select').addEventListener('change', async () => { const id = $('profile_select').value; if (dirty || currentLockReason) return; const result = await post('/api/pairs/select', {id}); if (result) { pairDraft = false; selectedProfileId=id; } });
+$('profile_select').addEventListener('change', async () => { const id = $('profile_select').value; if (dirty || currentLockReason) return; statusState = 'loading'; renderConnections(lastStatus || {}); const result = await post('/api/pairs/select', {id}); if (result) { pairDraft = false; selectedProfileId=id; } await refresh(); });
 $('add_pair').onclick = () => {
   if (pairDraft) { commitProfile(); return; }
   pairDraft = true; pairEditing = true; dirty = false; renderProfiles(); $('pair_note').textContent = 'New pair draft — fill the form and click Save new pair.'; $('profile_name').focus();
