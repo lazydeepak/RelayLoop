@@ -525,4 +525,91 @@ class RelayRunnerTests(unittest.TestCase):
         recovered.stop()
 
 
+    def test_distinct_pairs_run_concurrently_with_independent_targets(self):
+        first = FakeAdapters(); second = FakeAdapters()
+        one = self.make(first, "ses_a")
+        two = self.make(second, "ses_b")
+        one.start(); two.start()
+        first.planner = {"id": "planner-a", "text": "hello-a", "role": "assistant", "completed": True}
+        second.planner = {"id": "planner-b", "text": "hello-b", "role": "assistant", "completed": True}
+        self.assertTrue(one.running and two.running)
+        self.assertTrue(self.wait_for(lambda: len(first.sent_worker) == 1 and len(second.sent_worker) == 1))
+        self.assertEqual(first.sent_worker[0], ("ses_a", "hello-a"))
+        self.assertEqual(second.sent_worker[0], ("ses_b", "hello-b"))
+        self.assertNotEqual(one.state["last_planner_id"], two.state["last_planner_id"])
+        self.assertTrue(one.stop()["ok"]); self.assertTrue(two.stop()["ok"])
+
+    def test_pair_a_busy_does_not_block_pair_b(self):
+        busy = FakeAdapters(); busy.worker_busy = True
+        idle = FakeAdapters()
+        one = self.make(busy, "ses_busy")
+        two = self.make(idle, "ses_idle")
+        one.start(); two.start()
+        idle.planner = {"id": "planner-idle", "text": "idle-turn", "role": "assistant", "completed": True}
+        self.assertTrue(self.wait_for(lambda: len(idle.sent_worker) == 1))
+        self.assertEqual(idle.sent_worker[0], ("ses_idle", "idle-turn"))
+        self.assertEqual(busy.sent_worker, [])
+        self.assertTrue(one.running and two.running)
+        self.assertTrue(two.stop()["ok"])
+        busy.worker_busy = False
+        self.assertTrue(one.stop()["ok"])
+        self.assertTrue(one.stop()["ok"]); self.assertTrue(two.stop()["ok"])
+
+    def test_stopping_pair_a_leaves_pair_b_active(self):
+        first = FakeAdapters(); second = FakeAdapters()
+        one = self.make(first, "ses_a")
+        two = self.make(second, "ses_b")
+        one.start(); two.start()
+        first.planner = {"id": "planner-a", "text": "hello-a", "role": "assistant", "completed": True}
+        second.planner = {"id": "planner-b", "text": "hello-b", "role": "assistant", "completed": True}
+        self.assertTrue(self.wait_for(lambda: len(first.sent_worker) == 1 and len(second.sent_worker) == 1))
+        self.assertTrue(one.stop()["ok"])
+        self.assertFalse(one.running)
+        self.assertTrue(two.running)
+        self.assertTrue(two.stop()["ok"])
+
+    def test_failing_pair_a_does_not_stop_pair_b(self):
+        failing = FakeAdapters(); failing.ambiguous_worker = True
+        healthy = FakeAdapters()
+        one = self.make(failing, "ses_fail")
+        two = self.make(healthy, "ses_healthy")
+        one.start(); two.start()
+        failing.planner = {"id": "planner-fail", "text": "fail-turn", "role": "assistant", "completed": True}
+        healthy.planner = {"id": "planner-healthy", "text": "healthy-turn", "role": "assistant", "completed": True}
+        self.assertTrue(self.wait_for(lambda: one.status()["unresolved"] is not None))
+        self.assertTrue(self.wait_for(lambda: len(healthy.sent_worker) == 1))
+        self.assertFalse(one.running)
+        self.assertTrue(two.running)
+        self.assertIsNone(two.status()["unresolved"])
+        self.assertTrue(one.stop()["ok"]); self.assertTrue(two.stop()["ok"])
+
+    def test_pair_selection_does_not_redirect_active_runner(self):
+        app = None
+        # Exercised at App level in test_dashboard; runner-level identity check:
+        first = FakeAdapters(); second = FakeAdapters()
+        one = self.make(first, "ses_a")
+        two = self.make(second, "ses_b")
+        one.start(); two.start()
+        first.planner = {"id": "planner-a", "text": "hello-a", "role": "assistant", "completed": True}
+        second.planner = {"id": "planner-b", "text": "hello-b", "role": "assistant", "completed": True}
+        self.assertTrue(self.wait_for(lambda: len(first.sent_worker) == 1 and len(second.sent_worker) == 1))
+        self.assertEqual(first.sent_worker[0][0], "ses_a")
+        self.assertEqual(second.sent_worker[0][0], "ses_b")
+        self.assertTrue(one.stop()["ok"]); self.assertTrue(two.stop()["ok"])
+
+
+    def test_independent_pair_deduplication_across_distinct_runners(self):
+        first = FakeAdapters(); second = FakeAdapters()
+        one = self.make(first, "ses_a")
+        two = self.make(second, "ses_b")
+        one.start(); two.start()
+        first.planner = {"id": "shared-planner", "text": "shared prompt", "role": "assistant", "completed": True}
+        second.planner = {"id": "shared-planner", "text": "shared prompt", "role": "assistant", "completed": True}
+        self.assertTrue(self.wait_for(lambda: len(first.sent_worker) == 1 and len(second.sent_worker) == 1))
+        self.assertEqual(first.sent_worker[0], ("ses_a", "shared prompt"))
+        self.assertEqual(second.sent_worker[0], ("ses_b", "shared prompt"))
+        self.assertEqual(len(first.sent_worker), 1)
+        self.assertEqual(len(second.sent_worker), 1)
+        self.assertTrue(one.stop()["ok"]); self.assertTrue(two.stop()["ok"])
+
 if __name__ == "__main__": unittest.main()

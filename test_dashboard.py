@@ -183,31 +183,31 @@ class DashboardTests(unittest.TestCase):
         self.assertIs(app.relay, original)
         self.assertEqual(app.selected_pair_id, selected)
 
-    def test_save_pair_rejects_unknown_and_nonselected_ids_without_mutation(self):
+    def test_pair_save_rejects_unknown_and_updates_nonselected_without_selected_mutation(self):
         app = self.app()
         original_relay = app.relay
         original_selected = app.selected_pair_id
         original_pairs = json.loads(json.dumps(app.pairs))
         original_file = Path(self.tmp.name, "settings.json").read_bytes()
         payload = {"name":"Renamed", "planner_url":"https://chatgpt.com/c/changed", "worker_session":"ses_changed"}
-        for pair_id in ("missing-id", "not-selected"):
-            with self.subTest(pair_id=pair_id), self.assertRaises(ValueError):
-                app.save_pair({**payload, "id":pair_id})
-            self.assertIs(app.relay, original_relay)
-            self.assertEqual(app.selected_pair_id, original_selected)
-            self.assertEqual(app.pairs, original_pairs)
-            self.assertEqual(Path(self.tmp.name, "settings.json").read_bytes(), original_file)
+        with self.assertRaises(ValueError):
+            app.save_pair({**payload, "id":"missing-id"})
+        self.assertIs(app.relay, original_relay)
+        self.assertEqual(app.selected_pair_id, original_selected)
+        self.assertEqual(app.pairs, original_pairs)
+        self.assertEqual(Path(self.tmp.name, "settings.json").read_bytes(), original_file)
 
         added = app.save_pair({"name":"Second", "planner_url":"https://chatgpt.com/c/second", "worker_session":"ses_second"})["pair"]
         saved_pairs = json.loads(json.dumps(app.pairs))
         saved_file = Path(self.tmp.name, "settings.json").read_bytes()
         relay = app.relay
-        with self.assertRaisesRegex(ValueError, "Only the selected"):
-            app.save_pair({**payload, "id":original_selected})
+        # Non-selected profiles can now be edited without changing the selected pair.
+        result = app.save_pair({**payload, "id": original_selected})
+        self.assertTrue(result["ok"])
         self.assertIs(app.relay, relay)
-        self.assertEqual(app.pairs, saved_pairs)
-        self.assertEqual(Path(self.tmp.name, "settings.json").read_bytes(), saved_file)
         self.assertEqual(app.selected_pair_id, added["id"])
+        self.assertNotEqual(app.pairs, saved_pairs)
+        self.assertNotEqual(Path(self.tmp.name, "settings.json").read_bytes(), saved_file)
 
     def test_start_verifies_the_current_connection_without_a_separate_ui_gate(self):
         app = self.app()
@@ -293,6 +293,19 @@ class DashboardTests(unittest.TestCase):
             self.assertTrue(json.loads(urlopen(request).read())["ok"])
         finally:
             server.shutdown(); thread.join(); server.server_close()
+
+
+    def test_pair_selection_does_not_redirect_active_runner(self):
+        app = self.app()
+        app.save_pair({"name":"Second", "planner_url":"https://chatgpt.com/c/second", "worker_session":"ses_second"})
+        second_id = app.pairs[-1]["id"]
+        app.select_pair(second_id)
+        app.adapters.planner = {"id": "planner-live", "text": "live", "role": "assistant", "completed": True}
+        result = app.mutate("start")
+        self.assertTrue(result["ok"])
+        with self.assertRaises(ValueError):
+            app.select_pair(app.pairs[0]["id"])
+        app.mutate("stop")
 
 
 if __name__ == "__main__": unittest.main()
